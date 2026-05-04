@@ -1,11 +1,15 @@
 mod contact_info;
 mod crds;
+mod crds_data;
+mod crds_filter;
 mod emitter;
 mod handler;
 mod ip_echo;
 mod keypair;
+mod legacy_contact_info;
 mod ping_pong;
 mod protocol;
+mod pull_request;
 mod short_vec;
 mod transport;
 mod types;
