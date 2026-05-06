@@ -10,11 +10,142 @@ use solana_sdk::{
 };
 use ::{
     bincode::serialize,
+    bv::BitVec,
     serde::{Deserialize, Serialize},
-    std::{borrow::Cow, collections::BTreeSet},
+    std::{borrow::Borrow, borrow::Cow, collections::BTreeSet},
 };
 
-type IndexVote = u8;
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum CrdsData {
+    LegacyContactInfo(LegacyContactInfo), // 0 - deprecated, just bytes
+    Vote(VoteIndex, Vote),                // 1
+    LowestSlot(u8, LowestSlot),           // 2
+    LegacySnapshotHashes(LegacySnapshotHashes), // 3
+    AccountsHashes(AccountsHashes),       // 4
+    EpochSlots(EpochSlotsIndex, EpochSlots), // 5
+    LegacyVersion(LegacyVersion),         // 6
+    Version(Version),                     // 7
+    NodeInstance(NodeInstance),           // 8
+    DuplicateShred(DuplicateShredIndex, DuplicateShred), // 9
+    SnapshotHashes(SnapshotHashes),       // 10
+    ContactInfo(ContactInfo),             // 11 ← our real one
+    RestartLastVotedForkSlots(RestartLastVotedForkSlots), // 12
+    RestartHeaviestFork(RestartHeaviestFork), // 13
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct RestartHeaviestFork {
+    pub from: Pubkey,
+    pub wallclock: u64,
+    pub last_slot: Slot,
+    pub last_slot_hash: Hash,
+    pub observed_stake: u64,
+    pub shred_version: u16,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct RestartLastVotedForkSlots {
+    pub from: Pubkey,
+    pub wallclock: u64,
+    offsets: SlotsOffsets,
+    pub last_voted_slot: Slot,
+    pub last_voted_hash: Hash,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+enum SlotsOffsets {
+    RunLengthEncoding(RunLengthEncoding),
+    RawOffsets(RawOffsets),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+struct RunLengthEncoding(Vec<u16>);
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+struct RawOffsets(BitVec<u8>);
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct SnapshotHashes {
+    pub from: Pubkey,
+    pub full: (Slot, Hash),
+    pub incremental: Vec<(Slot, Hash)>,
+    pub wallclock: u64,
+}
+
+pub type DuplicateShredIndex = u16;
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub struct DuplicateShred {
+    pub from: Pubkey,
+    pub wallclock: u64,
+    pub slot: Slot,
+    _unused: u32,
+    _unused_shred_type: ShredType,
+    num_chunks: u8,
+    chunk_index: u8,
+    chunk: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+enum ShredType {
+    Data = 0b1010_0101,
+    Code = 0b0101_1010,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NodeInstance {
+    pub pubkey: Pubkey,
+    pub wallclock: u64,
+    pub timestamp: u64,
+    pub token: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Version {
+    pub pubkey: Pubkey,
+    pub wallclock: u64,
+    pub version: solana_version::LegacyVersion2,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LegacyVersion {
+    pub pubkey: Pubkey,
+    pub wallclock: u64,
+    pub version: solana_version::LegacyVersion1,
+}
+//pub struct LegacyContactInfo {}
+type EpochSlotsIndex = u8;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct EpochSlots {
+    pub from: Pubkey,
+    pub slots: Vec<CompressedSlot>,
+    pub wallclock: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum CompressedSlot {
+    Flate2(Flate2),
+    Uncompressed(Uncompressed),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Flate2 {
+    pub first_slot: Slot,
+    pub num: usize,
+    pub compressed: Vec<u8>,
+}
+
+type LegacySnapshotHashes = AccountsHashes;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AccountsHashes {
+    pub from: Pubkey,
+    pub hashes: Vec<(Slot, Hash)>,
+    pub wallclock: u64,
+}
+
+type VoteIndex = u8;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Vote {
@@ -42,24 +173,17 @@ pub struct EpochIncompleteSlots {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum CompressionType {}
+pub enum CompressionType {
+    Uncompressed,
+    Gzip,
+    Bzip2,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum CrdsData {
-    LegacyContactInfo(LegacyContactInfo), // 0 - deprecated, just bytes
-    Vote(IndexVote, Vote),                // 1
-    LowestSlot(u8, Vec<u8>),              // 2
-    LegacySnapshotHashes(Vec<u8>),        // 3
-    AccountsHashes(Vec<u8>),              // 4
-    EpochSlots(u8, Vec<u8>),              // 5
-    LegacyVersion(Vec<u8>),               // 6
-    Version(Vec<u8>),                     // 7
-    NodeInstance(Vec<u8>),                // 8
-    DuplicateShred(u16, Vec<u8>),         // 9
-    SnapshotHashes(Vec<u8>),              // 10
-    ContactInfo(ContactInfo),             // 11 ← our real one
-    RestartLastVotedForkSlots(Vec<u8>),   // 12
-    RestartHeaviestFork(Vec<u8>),         // 13
+pub struct Uncompressed {
+    pub first_slot: Slot,
+    pub num: usize,
+    pub slots: BitVec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
