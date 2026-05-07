@@ -98,4 +98,18 @@ impl ContactInfo {
     pub fn sockets(&self) -> &Vec<SocketEntry> {
         &self.sockets
     }
+
+    pub fn default() -> Self {
+        Self {
+            pubkey: Pubkey::new_unique(),
+            wallclock: timestamp(),
+            outset: unix_timestamp_micros(),
+            shred_version: 0,
+            version: solana_version::Version::default(),
+            addrs: Vec::<IpAddr>::default(),
+            sockets: vec![],
+            extensions: Vec::<Extension>::default(),
+            cache: [SOCKET_ADDR_UNSPECIFIED; SOCKET_CACHE_SIZE],
+        }
+    }
 }
