@@ -1,4 +1,6 @@
 use crate::contact_info::ContactInfo;
+use crate::crds_data::CrdsValue;
+use crate::crds_filter::CrdsFilter;
 use crate::ping_pong::{Ping, Pong};
 use anyhow::Result;
 use bitvec::prelude::*;
@@ -13,7 +15,8 @@ use solana_sdk::{
 
 const MASK_BITS: u32 = 7427;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+/**
+* #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CrdsFilter {
     pub filter: Bloom<Hash>,
     mask: u64,
@@ -72,7 +75,7 @@ impl Default for CrdsFilter {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+*#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CrdsValue {
     pub signature: Signature,
     pub data: CrdsData,
@@ -93,6 +96,10 @@ impl CrdsValue {
         }
     }
 }
+*
+*
+*
+*/
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum CrdsData {
@@ -119,11 +126,11 @@ pub struct PullRequest {
     pub known: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PullResponse {
+//#[derive(Debug, Clone, Serialize, Deserialize)]
+/**pub struct PullResponse {
     pub from: Pubkey,
     pub values: Vec<CrdsValue>,
-}
+}**/
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Protocol {

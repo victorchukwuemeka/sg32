@@ -113,7 +113,7 @@ pub struct LegacyVersion {
     pub wallclock: u64,
     pub version: solana_version::LegacyVersion1,
 }
-//pub struct LegacyContactInfo {}
+
 type EpochSlotsIndex = u8;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -207,7 +207,26 @@ impl CrdsValue {
         }
     }
 
-    fn unsigned_new_data(data: CrdsData) -> Self {
+    pub fn pubkey(&self) -> Pubkey {
+        match &self.data {
+            CrdsData::LegacyContactInfo(contact_info) => *contact_info.pubkey(),
+            CrdsData::Vote(_, vote) => vote.from,
+            CrdsData::LowestSlot(_, slots) => slots.from,
+            CrdsData::LegacySnapshotHashes(hash) => hash.from,
+            CrdsData::AccountsHashes(hash) => hash.from,
+            CrdsData::EpochSlots(_, p) => p.from,
+            CrdsData::LegacyVersion(version) => version.pubkey,
+            CrdsData::Version(version) => version.pubkey,
+            CrdsData::NodeInstance(node) => node.pubkey,
+            CrdsData::DuplicateShred(_, shred) => shred.from,
+            CrdsData::SnapshotHashes(hash) => hash.from,
+            CrdsData::ContactInfo(node) => *node.pubkey(),
+            CrdsData::RestartLastVotedForkSlots(slots) => slots.from,
+            CrdsData::RestartHeaviestFork(fork) => fork.from,
+        }
+    }
+
+    pub fn unsigned_new_data(data: CrdsData) -> Self {
         Self {
             signature: Signature::default(),
             data,
@@ -215,7 +234,7 @@ impl CrdsValue {
         }
     }
 
-    fn signed_new_data(data: CrdsData, keypair: &Keypair) -> Self {
+    pub fn signed_new_data(data: CrdsData, keypair: &Keypair) -> Self {
         let mut value = Self::unsigned_new_data(data);
         value.sign(keypair);
         value
