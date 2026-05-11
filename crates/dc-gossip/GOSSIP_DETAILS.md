@@ -93,7 +93,7 @@ Zero bytes came back after the PullRequest. The entrypoint was silently ignoring
 
 ## 4. The Debugging Journey
 
-> This section tells the story in chronological order — every hypothesis, every dead end, every "aha" moment.
+> This section tells the story in chronological order — every hypothesis, every dead end, every "aha" moment. It starts with the original wire-format bugs (Phases 1-4), then covers the second wave of bugs (Phase 5) that appeared only after the entrypoint started talking back.
 
 ---
 
@@ -406,6 +406,148 @@ CRDS: 18 entries, 1 peers ✓
 
 The entrypoint accepted our PullRequest, passed the shred version check, queued our request, sent us a Ping (which we responded to with Pong), and then started sending us actual gossip data containing valid validator records.
 
+But now a new problem emerged — we could see peers in the CRDS table, **but every port showed "none"**.
+
+---
+
+### Phase 5: The Second Wave — Port Offsets and Cache Poisoning
+
+Now that the entrypoint was actually sending us data, two new bugs became visible:
+
+**Bug A: Cumulative port offsets**
+
+Agave's `SocketEntry.offset` is **not** an absolute port — it's a port offset relative to the previous entry. To get the actual port for a socket, you accumulate offsets in order.
+
+**Agave's get_socket (gossip/src/contact_info.rs:312-330):**
+```rust
+fn get_socket(&self, key: u8) -> Result<SocketAddr, Error> {
+    let mut port = 0u16;
+    for entry in &self.sockets {
+        port += entry.offset;        // ← CUMULATIVE, not absolute!
+        if entry.key == key {
+            let addr = self.addrs.get(usize::from(entry.index))?;
+            return Ok(SocketAddr::new(*addr, port));
+        }
+    }
+    Err(Error::SocketNotFound(key))
+}
+```
+
+**Our broken socket_by_key:**
+```rust
+pub fn socket_by_key(&self, key: u8) -> Option<SocketAddr> {
+    self.sockets.iter().find(|s| s.key == key).and_then(|entry| {
+        let ip = self.addrs.get(entry.index as usize)?;
+        Some(SocketAddr::new(*ip, entry.offset))  // ← WRONG: used offset as absolute port!
+    })
+}
+```
+
+A real ContactInfo from devnet might have socket entries like:
+```
+key=0 (gossip),    offset=8001, index=0  → port = 0 + 8001 = 8001 ✓
+key=5 (TPU),       offset=2,    index=0  → port = 8001 + 2 = 8003 ✓
+key=9 (TPUvote),   offset=0,    index=0  → port = 8003 + 0 = 8003 ✓
+key=10 (TVU),      offset=-1,   index=0  → port = 8003 - 1 = 8002 ✓
+```
+
+Our old code treated `offset=2` for TPU as port `2` instead of `8003`.
+
+Encoded by `set_socket`: the first entry's offset equals the full port. Each subsequent entry's offset is the difference from the previous port. This differential encoding allows small varint values: the gossip port (8001) becomes a 2-byte varint, but subsequent offsets like 2, 0, or -1 are 1 byte each.
+
+**The fix:**
+```rust
+pub fn socket_by_key(&self, key: u8) -> Option<SocketAddr> {
+    let mut port = 0u16;
+    for entry in &self.sockets {
+        port = port.checked_add(entry.offset)?;  // ← cumulative!
+        if entry.key == key {
+            let ip = self.addrs.get(entry.index as usize)?;
+            return Some(SocketAddr::new(*ip, port));
+        }
+    }
+    None
+}
+```
+
+**Bug B: The cache field — a poison pill for deserialization**
+
+Our `ContactInfo` had `#[serde(skip_serializing)]` on the `cache` field. This correctly skipped `cache` during serialization (it's not on the wire). But since we derived `Deserialize`, serde still tried to **read** cache from the byte stream during deserialization. Since cache wasn't in the stream, bincode would read the next 130 bytes (13 SocketAddrs × ~10 bytes each for IPv4) from whatever came after the ContactInfo data — which was the **next CrdsValue's buffer**.
+
+This corrupted every downstream CrdsValue and silently consumed bytes that belonged to subsequent values.
+
+**The fix:** Agave uses a two-struct approach — a `ContactInfoLite` without cache for deserialization, then populate cache from socket entries:
+
+```rust
+#[derive(Deserialize)]
+struct ContactInfoLite {
+    pubkey: Pubkey,
+    #[serde(with = "serde_varint")]
+    wallclock: u64,
+    outset: u64,
+    shred_version: u16,
+    version: Version,
+    #[serde(with = "short_vec")]
+    addrs: Vec<IpAddr>,
+    #[serde(with = "short_vec")]
+    sockets: Vec<SocketEntry>,
+    #[serde(with = "short_vec")]
+    extensions: Vec<Extension>,
+}
+
+impl<'de> Deserialize<'de> for ContactInfo {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> {
+        let lite = ContactInfoLite::deserialize(deserializer)?;
+        let mut cache = [SOCKET_ADDR_UNSPECIFIED; SOCKET_CACHE_SIZE];
+        let mut port = 0u16;
+        for entry in &lite.sockets {
+            port = port.wrapping_add(entry.offset);
+            if let Some(cached) = cache.get_mut(usize::from(entry.key)) {
+                if let Some(addr) = lite.addrs.get(usize::from(entry.index)) {
+                    *cached = SocketAddr::new(*addr, port);
+                }
+            }
+        }
+        Ok(Self { pubkey: lite.pubkey, wallclock: lite.wallclock, ..., cache })
+    }
+}
+```
+
+We also had `SOCKET_CACHE_SIZE = 13` but Agave v2.2.x devnet actually uses 14 (tags 0-13, where tag 13 = Alpenglow). Fixed that too.
+
+**With both fixes, the cluster info table finally showed real data:**
+
+```
+  IP Address          | AgeMs | Node identifier                          | Version | Gossip | TPUvote | TPU  | TPUfwd | TVU  | TVU Q | ServeR | ShredVer
+  ----------------------------------------------------------------------------------------------------------------------------------------
+  208.91.110.147      | -     | ES5M2g5Lu4Cewkk...                       | 4.16384.0 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8010 |   11016
+  185.189.44.238      | -     | 3ne7n82Kqf1zPo4...                       | 4.32768.7 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8009 |   11016
+  151.202.34.247      | -     | iniPkjWxbT88TUAU...                       | 3.1.8   | 8001 |    8005 | 8003 |  8004 | 8000 |  8002 |  8012 |   11016
+```
+
+56 peers, all with correct ports. Peer discovery grew from 1 → 116 in ~25 seconds.
+
+---
+
+### The Per-Value CrdsValue Fallback
+
+One more issue revealed itself: when a PullResponse contains a mix of CrdsData variants, and one fails to deserialize, the entire message was lost. We added a fallback in `Protocol::decode_from` that tries the fast path first (`bincode::deserialize` on the whole message), and if that fails, falls back to manual per-CrdsValue parsing that skips individual bad variants.
+
+```
+Fast path: bincode::deserialize::<Protocol>(bytes)
+  → If OK, great (most PullResponses with all-ContactInfo values)
+  → If error:
+    1. Read Protocol discriminant manually
+    2. For PullResponse/PushMessage (tags 1-2):
+       a. Read Pubkey (from)
+       b. Read u64 count
+       c. For each value: try bincode::deserialize::<CrdsValue>
+          → If OK: advance cursor by serialized_size
+          → If error: skip ahead by estimated size (64 bytes + CrdsData)
+```
+
+This way, a single bad Vote or LowestSlot variant doesn't take down the whole PullResponse.
+
 ---
 
 ## 5. Byte-by-Byte Wire Format Analysis
@@ -692,7 +834,9 @@ solana-short-vec = "2"
 
 ### File: `src/contact_info.rs`
 
-**What changed:** 8 specific edits.
+**What changed:** 10 specific edits across two rounds.
+
+#### Round 1 (Initial wire-format fixes)
 
 **Edit 1 — Imports:**
 ```rust
@@ -703,13 +847,13 @@ use solana_short_vec as short_vec;
 
 **Edit 2 — SOCKET_CACHE_SIZE:**
 ```rust
-// Before:
-const SOCKET_CACHE_SIZE: usize = 14;
-
-// After:
+// Initially (wrong):
 const SOCKET_CACHE_SIZE: usize = 13;
+
+// After Phase 5 fix:
+const SOCKET_CACHE_SIZE: usize = 14;
 ```
-Why 13? Agave v2.2.0 has socket tags 0-12 = 13 tags. Verified at `git show v2.2.0:gossip/src/contact_info.rs`. In v3.x this became 14 (tags went 0-13). Devnet runs v2.2.x. (The cache field is skip_serializing so this only affects in-memory struct layout, not wire format.)
+Why 14? Agave v2.2.x has socket tags 0-13 = 14 tags (`SOCKET_TAG_ALPENGLOW = 13`, so `SOCKET_CACHE_SIZE = 13 + 1 = 14`). The cache field is `skip_serializing` so this only affects in-memory layout, not wire format — but deserialization must match.
 
 **Edit 3 — SocketEntry.offset:**
 ```rust
@@ -755,13 +899,12 @@ pub wallclock: u64,
 ```
 **THIS WAS THE #1 BUG.** The entire ContactInfo deserialization failed because of this.
 
-**Edit 8 — ContactInfo.addrs, .sockets, .extensions, .cache:**
+**Edit 8 — ContactInfo.addrs, .sockets, .extensions:**
 ```rust
 // Before:
 pub addrs: Vec<IpAddr>,
 pub sockets: Vec<SocketEntry>,
 pub extensions: Vec<Extension>,
-pub cache: [SocketAddr; SOCKET_CACHE_SIZE],
 
 // After:
 #[serde(with = "short_vec")]
@@ -770,8 +913,91 @@ pub addrs: Vec<IpAddr>,
 pub sockets: Vec<SocketEntry>,
 #[serde(with = "short_vec")]
 pub extensions: Vec<Extension>,
-#[serde(skip_serializing)]
-pub cache: [SocketAddr; SOCKET_CACHE_SIZE],
+```
+
+#### Round 2 (Phase 5 bugs — more subtle)
+
+**Edit 9 — socket_by_key: cumulative port offsets**
+
+The old code treated `SocketEntry.offset` as an absolute port. In Agave's wire protocol, offsets are cumulative — you accumulate them while iterating.
+
+```rust
+// Before (WRONG):
+pub fn socket_by_key(&self, key: u8) -> Option<SocketAddr> {
+    self.sockets.iter().find(|s| s.key == key).and_then(|entry| {
+        let ip = self.addrs.get(entry.index as usize)?;
+        Some(SocketAddr::new(*ip, entry.offset))
+    })
+}
+
+// After (CORRECT — matches Agave's get_socket):
+pub fn socket_by_key(&self, key: u8) -> Option<SocketAddr> {
+    let mut port = 0u16;
+    for entry in &self.sockets {
+        port = port.checked_add(entry.offset)?;
+        if entry.key == key {
+            let ip = self.addrs.get(entry.index as usize)?;
+            return Some(SocketAddr::new(*ip, port));
+        }
+    }
+    None
+}
+```
+
+**Edit 10 — Custom Deserialize via ContactInfoLite**
+
+The derived `#[derive(Deserialize)]` tried to read `cache: [SocketAddr; SOCKET_CACHE_SIZE]` from the byte stream even though it was `skip_serializing` — there were no bytes for it, so bincode consumed the next CrdsValue's buffer.
+
+Replaced with Agave's two-struct pattern:
+
+```rust
+// Struct for deserialization only — no cache field
+#[derive(Deserialize)]
+struct ContactInfoLite {
+    pubkey: Pubkey,
+    #[serde(with = "serde_varint")]
+    wallclock: u64,
+    outset: u64,
+    shred_version: u16,
+    version: Version,
+    #[serde(with = "short_vec")]
+    addrs: Vec<IpAddr>,
+    #[serde(with = "short_vec")]
+    sockets: Vec<SocketEntry>,
+    #[serde(with = "short_vec")]
+    extensions: Vec<Extension>,
+}
+
+// ContactInfo only derives Serialize
+#[derive(Debug, Clone, Serialize)]
+pub struct ContactInfo {
+    pub pubkey: Pubkey,
+    // ... (same fields, no Deserialize derive)
+    #[serde(skip_serializing)]
+    pub cache: [SocketAddr; SOCKET_CACHE_SIZE],
+}
+
+// Custom Deserialize: deserialize into ContactInfoLite,
+// then populate cache from socket entries (cumulative port offsets)
+impl<'de> Deserialize<'de> for ContactInfo {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> {
+        let lite = ContactInfoLite::deserialize(deserializer)?;
+        let mut cache = [SOCKET_ADDR_UNSPECIFIED; SOCKET_CACHE_SIZE];
+        let mut port = 0u16;
+        for entry in &lite.sockets {
+            port = port.wrapping_add(entry.offset);
+            if let Some(cached) = cache.get_mut(usize::from(entry.key)) {
+                if let Some(addr) = lite.addrs.get(usize::from(entry.index)) {
+                    *cached = SocketAddr::new(*addr, port);
+                }
+            }
+        }
+        Ok(Self { pubkey: lite.pubkey, wallclock: lite.wallclock,
+            outset: lite.outset, shred_version: lite.shred_version,
+            version: lite.version, addrs: lite.addrs,
+            sockets: lite.sockets, extensions: lite.extensions, cache })
+    }
+}
 ```
 
 ---
@@ -818,15 +1044,69 @@ This simple change let us see the actual bincode error, like `unexpected end of 
 
 ---
 
+### File: `src/protocol.rs`
+
+**What changed:** Added per-value CrdsValue error handling fallback in `decode_from`.
+
+When a PullResponse or PushMessage contains a mix of CrdsData variants and one variant fails to deserialize, the entire message previously failed. Now `decode_from` tries a fast path first (full `bincode::deserialize`), and if that fails, manually parses each CrdsValue individually, skipping bad ones:
+
+```rust
+pub fn decode_from(bytes: &[u8]) -> Result<Self> {
+    // Fast path — bincode handles the whole thing
+    if let Ok(msg) = bincode::deserialize(bytes) {
+        return Ok(msg);
+    }
+    // Slow path — manual parse, skip bad CrdsValues
+    let tag: u32 = bincode::deserialize_from(&mut cursor)?;
+    match tag {
+        1 | 2 => {  // PullResponse or PushMessage
+            let from: Pubkey = bincode::deserialize_from(&mut cursor)?;
+            let count: u64 = bincode::deserialize_from(&mut cursor)?;
+            for _ in 0..count {
+                match bincode::deserialize::<CrdsValue>(remaining) {
+                    Ok(val) => values.push(val),
+                    Err(_) => { /* skip bad value */ }
+                }
+            }
+        }
+        _ => bincode::deserialize(bytes)  // other variants: no fallback
+    }
+}
+```
+
+---
+
+### File: `src/crds.rs`
+
+**What changed:** Added `all_contact_infos()` method for the cluster info table display.
+
+Previously only `get_contact_infos()` existed, returning `Vec<(Pubkey, SocketAddr)>` — enough for peer discovery but insufficient for the port table display which needs the full `ContactInfo` struct.
+
+```rust
+pub fn all_contact_infos(&self) -> Vec<(Pubkey, &ContactInfo)> {
+    self.entries
+        .iter()
+        .filter_map(|(pk, value)| match &value.data {
+            CrdsData::ContactInfo(ci) => Some((*pk, ci)),
+            _ => None,
+        })
+        .collect()
+}
+```
+
+The table row rendering in `main.rs` uses this every 30 seconds to print the cluster info table.
+
+---
+
 ## 8. What We Still Get Wrong (and Why It Doesn't Matter)
 
 ### Issue 1: Unknown CrdsData variants
 
-Our `CrdsData` enum has 14 variants, but we only properly handle `ContactInfo` (variant 11). When the entrypoint sends a PullResponse containing a `CrdsData::Vote` (variant 1) or `CrdsData::LowestSlot` (variant 2), the deserialization of those specific variants may fail — and since bincode deserializes the entire Protocol message at once, **one bad CrdsValue takes down the whole PullResponse**.
+Our `CrdsData` enum has 14 variants, but we only properly implement `ContactInfo` (variant 11). When a PullResponse contains `CrdsData::Vote` (variant 1) or `CrdsData::LowestSlot` (variant 2) or other variants, the inner struct definitions may not match Agave's exact wire format, causing those specific values to fail deserialization.
 
-**The fix would be:** Implement a manual `Deserialize` for `Protocol::PullResponse` that tries to deserialize each `CrdsValue` individually and skips failures. This is how Agave handles it internally — they have robust per-value error handling.
+**Our mitigation:** `Protocol::decode_from` has a per-value fallback that tries the fast path first and, on failure, manually parses each `CrdsValue` in a `Vec<CrdsValue>`, skipping individual bad values. This means a single bad Vote variant doesn't take down the whole PullResponse.
 
-**Why it doesn't matter now:** We still receive plenty of valid ContactInfo entries. The PullResponses that fail entirely are re-requested on the next 5-second cycle.
+**Why it still doesn't matter:** We still receive plenty of valid `ContactInfo` entries from every PullResponse. The few values that fail are simply skipped.
 
 ### Issue 2: UDP Packet Fragmentation
 
@@ -836,7 +1116,7 @@ Some PullResponse packets arrive truncated (`io error: unexpected end of file`).
 
 ### Issue 3: SOCKET_CACHE_SIZE version mismatch
 
-We use 13 (Agave v2.2.x) but the current Agave main branch uses 14. Since cache is `skip_serializing`, this only affects in-memory layout, not wire format. If devnet upgrades to v3.x, they'd expect 14 SocketAddrs in the cache array. But since we skip it entirely, it doesn't matter.
+We now use 14 (Agave v2.2.x devnet standard: tags 0-13, where tag 13 = Alpenglow). Since the cache field is populated from socket entries during deserialization, mismatches in cache size could cause indexing errors if a node sends socket keys >= our cache size. For now, 14 covers all current tags.
 
 ---
 
@@ -870,7 +1150,14 @@ RUST_LOG=info ./target/debug/dc-gossip 35.197.53.105:8001
 2026-05-11T22:23:16.344Z  INFO dc_gossip::handler: new/updated entry from dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS
 2026-05-11T22:23:16.344Z  INFO dc_gossip::handler: new/updated entry from 5B4U4jQovXuMc5fASzRkFtGt4ToiQmsSAUY7cKX1fAyR
 ...
-2026-05-11T22:23:27.088Z  INFO dc_gossip: CRDS: 18 entries, 1 peers
+2026-05-11T22:23:32.479Z  INFO dc_gossip: CRDS: 117 entries, 56 gossip peers
+2026-05-11T22:23:32.479Z  INFO dc_gossip:   IP Address          | Age(ms) | Node identifier                              | Version | Gossip | TPUvote | TPU  | TPUfwd | TVU  | TVU Q | ServeR | ShredVer
+2026-05-11T22:23:32.479Z  INFO dc_gossip:   ----------------------------------------------------------------------------------------------------------------------------------------
+2026-05-11T22:23:32.479Z  INFO dc_gossip:   208.91.110.147      | -       | ES5M2g5Lu4CewkkTLn56wekb1wfN4AvMNtWAK9tTS14U | 4.16384.0 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8010 |   11016
+2026-05-11T22:23:32.479Z  INFO dc_gossip:   185.189.44.238      | -       | 3ne7n82Kqf1zPo4obYTnQA8tJBDuSEYyvKYS89Mbky4q | 4.32768.7 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8009 |   11016
+2026-05-11T22:23:32.479Z  INFO dc_gossip:   151.202.34.247      | -       | iniPkjWxbT88TUAUGiUVB3WoCeq2kUAQAs3dN4pjnEv | 3.1.8   | 8001 |    8005 | 8003 |  8004 | 8000 |  8002 |  8012 |   11016
+2026-05-11T22:23:32.479Z  INFO dc_gossip:   Nodes: 56
+2026-05-11T22:23:33.484Z  INFO dc_gossip: sending PullRequest (1232 bytes) to 63 peers
 ```
 
 ### Debug levels:
@@ -897,6 +1184,10 @@ RUST_LOG=info ./target/debug/dc-gossip 35.197.53.105:8001
 | `gossip/src/crds_value.rs:213-237` | Manual Deserialize impl for CrdsValue — helper struct without hash |
 | `gossip/src/crds_data.rs:44-67` | CrdsData enum variant ordering |
 | `version/src/v3.rs:10-22` | Version struct with varint annotations |
+| `gossip/src/contact_info.rs:530-583` | Custom Deserialize for ContactInfo via ContactInfoLite (pattern we replicated) |
+| `gossip/src/contact_info.rs:312-330` | get_socket() with cumulative port offsets (critical for socket_by_key fix) |
+| `gossip/src/contact_info.rs:344-377` | set_socket() showing how port offsets are computed |
+| `gossip/src/contact_info.rs:46` | SOCKET_CACHE_SIZE = SOCKET_TAG_ALPENGLOW + 1 = 14 |
 
 ### v2.2.0 (what devnet runs)
 
@@ -904,6 +1195,15 @@ RUST_LOG=info ./target/debug/dc-gossip 35.197.53.105:8001
 |---------|-----------------|
 | `git show v2.2.0:gossip/src/contact_info.rs` | Same serde annotations as v3, SOCKET_CACHE_SIZE = 13 |
 | `git show v2.2.0:gossip/src/protocol.rs` | Same discriminant ordering as v3 |
+
+### Additional Files We Created
+
+| File | What It Does |
+|------|-------------|
+| `crates/dc-gossip/src/contact_info.rs` | ContactInfo with custom Deserialize, cumulative port offsets in socket_by_key |
+| `crates/dc-gossip/src/crds.rs` | CrdsTable with all_contact_infos() for table display |
+| `crates/dc-gossip/src/protocol.rs` | Protocol::decode_from with per-value CrdsValue fallback |
+| `crates/dc-gossip/GOSSIP_DETAILS.md` | This document |
 
 ### Key commands used during investigation
 
@@ -980,11 +1280,17 @@ sed -n '213,237p' gossip/src/crds_value.rs
 │  3. Match discriminant:                                             │
 │     - 4 = PingMessage → send Pong back                              │
 │     - 1 = PullResponse → process CrdsValues                         │
-│  4. For each CrdsValue in PullResponse:                             │
+│  4. decode_from() tries fast path first:                            │
+│     - bincode::deserialize::<Protocol>(bytes) → if OK, use it       │
+│     - If fails: manual per-CrdsValue parse, skip bad variants       │
+│  5. For each CrdsValue in PullResponse:                             │
 │     - CrdsData::ContactInfo(node) → merge into CRDS table ✓         │
-│     - Other variants → may fail (not fully implemented)             │
-│  5. Every 5 seconds: send PullRequest again                          │
-│  6. Every 30 seconds: prune old CRDS entries                        │
+│     - Other variants → per-value fallback skips failures ✓          │
+│  6. Every 5 seconds: send PullRequest to all known peers            │
+│  7. Every 30 seconds:                                              │
+│     a. Prune old CRDS entries (15 min TTL)                          │
+│     b. Print cluster info table with all ports                      │
+│     c. Extend known_peers with new gossip addresses                 │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```

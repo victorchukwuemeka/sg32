@@ -1,3 +1,4 @@
+use crate::contact_info::ContactInfo;
 use crate::crds_data::{CrdsData, CrdsValue};
 use crate::emitter::GossipEvent;
 use crate::types::ValidatorInfo;
@@ -56,6 +57,16 @@ impl CrdsTable {
 
     pub fn len(&self) -> usize {
         self.entries.len()
+    }
+
+    pub fn all_contact_infos(&self) -> Vec<(Pubkey, &ContactInfo)> {
+        self.entries
+            .iter()
+            .filter_map(|(pk, value)| match &value.data {
+                CrdsData::ContactInfo(ci) => Some((*pk, ci)),
+                _ => None,
+            })
+            .collect()
     }
 
     pub fn drain_events(&mut self) -> Vec<GossipEvent> {

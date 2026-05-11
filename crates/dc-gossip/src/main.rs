@@ -236,11 +236,24 @@ async fn main() -> Result<(), anyhow::Error> {
 
                 if last_prune.elapsed() >= Duration::from_secs(30) {
                     crds_table.prune();
+                    let infos = crds_table.get_contact_infos();
                     tracing::info!(
-                        "CRDS: {} entries, {} peers",
+                        "CRDS: {} entries, {} gossip peers",
                         crds_table.len(),
-                        known_peers.len(),
+                        infos.len(),
                     );
+                    if !infos.is_empty() {
+                        tracing::info!("  {:>18} | {:>5} | {:45} | {:7} | Gossip | TPUvote | TPU | TPUfwd | TVU | TVU Q | ServeR | ShredVer", "IP Address", "Age(ms)", "Node identifier", "Version");
+                        tracing::info!("  {}", "-".repeat(128));
+                        for (_, ci) in crds_table.all_contact_infos() {
+                            tracing::info!("{}", ci.table_row());
+                        }
+                        tracing::info!("  Nodes: {}", infos.len());
+                    }
+                    // Add discovered gossip peers to known_peers
+                    for (_, addr) in &infos {
+                        known_peers.insert(*addr);
+                    }
                     last_prune = Instant::now();
                 }
             }

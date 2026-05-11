@@ -1,0 +1,12 @@
+[book]
+title = "How Solana Gossip Really Works"
+authors = ["dc-gossip"]
+description = "A byte-level journey into the Solana devnet gossip protocol — building a working client from scratch, debugging wire format mismatches, and finally talking to the network."
+
+[output.html]
+no-section-label = true
+git-repository-url = "https://github.com/victorchukwuemeka/solana-protocol-gym"
+edit-url-template = "https://github.com/victorchukwuemeka/solana-protocol-gym/edit/main/docs/src/{path}"
+
+[rust]
+edition = "2021"

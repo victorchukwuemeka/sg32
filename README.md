@@ -26,100 +26,58 @@ Every module implements a real piece of the Solana stack — same wire protocols
 
 ## What's inside
 
-| Module | What it implements | Protocol |
+| Module | Status | What it implements |
 |---|---|---|
-| `dc-gossip` | Peer discovery, CRDS table, cluster state sync | UDP / QUIC |
-| `dc-tvu` | Shred receiver, erasure reconstruction, block assembly | Turbine / UDP |
-| `dc-tpu` | Transaction forwarding to leader | QUIC |
-| `dc-ledger` | Block storage, account state, ledger parsing | Local |
-| `dc-poh` | Proof of History hash chain verifier | — |
-| `dc-consensus` | Tower BFT simulator — votes, forks, lockouts | — |
-| `dc-runtime` | Sealevel-lite parallel transaction execution | — |
-| `dc-rpc` | JSON-RPC surface over local replayed ledger | TCP |
-| `dc-cli` | CLI tools for every module | — |
-
-All modules speak the real Solana wire protocol. This is not a simulation of Solana — it connects to mainnet, receives real data, and processes it correctly.
+| `dc-gossip` | ✅ **Working** | CRDS table, peer discovery, cluster info table — connects to devnet, discovers 50+ peers, shows versions and ports |
+| `dc-tvu` | ⏳ Planned | Shred receiver, erasure reconstruction, block assembly |
+| `dc-tpu` | ⏳ Planned | Transaction forwarding to leader via QUIC |
+| `dc-ledger` | ⏳ Planned | Block storage, account state, ledger parsing |
+| `dc-poh` | ⏳ Planned | Proof of History hash chain verifier |
+| `dc-consensus` | ⏳ Planned | Tower BFT simulator — votes, forks, lockouts |
+| `dc-runtime` | ⏳ Planned | Sealevel-lite parallel transaction execution |
+| `dc-rpc` | ⏳ Planned | JSON-RPC surface over local replayed ledger |
+| `dc-cli` | ⏳ Planned | CLI tools for every module |
 
 ---
 
-## The protocol stack — bottom up
+## dc-gossip — the working module
 
-Most people learn Solana top-down: RPC → transactions → programs. This project goes the other direction.
+`dc-gossip` speaks the **real Solana gossip wire protocol** — the same UDP-based CRDS protocol that every validator uses to discover peers and exchange cluster state.
+
+### What it does
+
+1. **Ping/Pong handshake** with any gossip entrypoint
+2. **PullRequest/PullResponse** — asks "who's on the network?" and receives CRDS entries
+3. **ContactInfo decoding** — parses validator identity, version, shred version, and all socket addresses (gossip, TPU, TVU, TPUvote, ServeR, etc.)
+4. **CRDS table** — in-memory store of discovered validators, pruned after 15 minutes
+5. **Cluster info table** — prints all discovered peers with ports every 30 seconds
+6. **Automatic peer discovery** — starts with 1 entrypoint, grows to 100+ peers within seconds
+7. **Per-value error recovery** — skips individual bad CRDS entries instead of dropping entire messages
+
+### What it looks like
 
 ```
-Layer 7 — RPC              dc-rpc        serve getBlock, getTransaction locally
-Layer 6 — Execution        dc-runtime    Sealevel-lite, parallel tx execution
-Layer 5 — Consensus        dc-consensus  Tower BFT, fork choice, lockouts
-Layer 4 — PoH              dc-poh        hash chain replay and verification
-Layer 3 — Ledger           dc-ledger     blockstore, account state, shred DB
-Layer 2 — TVU / TPU        dc-tvu        shred recv, erasure coding, block assembly
-                           dc-tpu        QUIC transaction forwarding
-Layer 1 — Gossip           dc-gossip     CRDS, peer discovery, cluster state
-Layer 0 — Network          UDP/QUIC/TCP  actual wire protocols, sockets, packets
+2026-05-11T22:23:32.479Z  INFO dc_gossip: CRDS: 117 entries, 56 gossip peers
+2026-05-11T22:23:32.479Z  INFO dc_gossip:
+    IP Address       | Age(ms) | Node ID                                      | Version    | Gossip | TPUvote | TPU | TPUfwd | TVU | ServeR | ShredVer
+  ----------------------------------------------------------------------------------------------------------------------------------
+  208.91.110.147     | -       | ES5M2g5Lu4CewkkTLn56wekb1wfN4AvMNtWAK9tTS14U | 4.16384.0  | 8001   | 8005    | 1   | 1      | 8002| 8010   | 11016
+  185.189.44.238     | -       | 3ne7n82Kqf1zPo4obYTnQA8tJBDuSEYyvKYS89Mbky4q | 4.32768.7  | 8000   | 8004    | 1   | 1      | 8001| 8009   | 11016
+  151.202.34.247     | -       | iniPkjWxbT88TUAUGiUVB3WoCeq2kUAQAs3dN4pjnEv | 3.1.8      | 8001   | 8005    | 8003| 8004   | 8000| 8012   | 11016
+  Nodes: 56
 ```
 
-Each layer builds on the one below it. You can run any module independently, or wire them together into a functioning light node.
+### Debugging journey documented
 
----
+The complete byte-level debugging story — from "entrypoint ignores us" to "56 peers discovered" — is documented in [`crates/dc-gossip/GOSSIP_DETAILS.md`](crates/dc-gossip/GOSSIP_DETAILS.md).
 
-## Roadmap
-
-### ✅ Phase 1 — JSON-RPC baseline
-Query historical data. Understand the data model before touching the wire.
-
-### ✅ Phase 2 — Gossip
-- Connect to Solana mainnet gossip over UDP/QUIC
-- Parse CRDS table entries — validator identities, contact info, slot announcements
-- Discover peers without touching RPC
-- CLI: `dc gossip peers`, `dc gossip slots`
-
-This is where the project gets real. You open a UDP socket, speak Solana's gossip protocol, and watch mainnet validators announce themselves to you.
-
-### 🔜 Phase 3 — TVU / Turbine (block receiver)
-- Bind to TVU port and receive raw shreds from the network
-- Parse data shreds and coding shreds
-- Implement Reed-Solomon erasure reconstruction
-- Reassemble shreds into full blocks — no RPC involved
-- Compare native TVU speed vs `getBlock` RPC latency
-
-**Why this matters:** This is how validators actually get blockchain data. Not via HTTP. Via Turbine — a shred propagation tree built on UDP. Understanding this is the difference between knowing Solana and knowing *how Solana works*.
-
-### 🔜 Phase 4 — Proof of History verifier
-- Implement PoH hash chain replay in Rust
-- Verify time-ordering of transactions cryptographically
-- Confirm that the global clock is honest
-
-### 🔜 Phase 5 — TPU / QUIC (transaction sender)
-- Build a QUIC client that connects directly to validator TPU ports
-- Send raw transaction bytes — no RPC, no middleware
-- Benchmark against `sendTransaction()` RPC
-
-### 🔜 Phase 6 — Tower BFT simulator
-- Simulate validator votes and fork choice
-- Implement lockout rules
-- Visualize how finality accumulates across forks
-
-### 🔜 Phase 7 — Sealevel-lite runtime
-- Execute transactions locally against replayed ledger state
-- Understand parallel execution — why Solana can process thousands of TPS
-- Replay historical blocks and verify outputs
-
-### 🔜 Phase 8 — RPC surface
-- Serve `getBlock`, `getTransaction`, `getAccountInfo` from your local ledger
-- No Helius, no QuickNode — your own node, your own data
-- Add custom analytics endpoints beyond standard RPC
-
-### 🔜 Phase 9 — Finality proofs
-- Generate cryptographic proofs that a transaction is finalized in the Solana ledger
-- Export portable proof format verifiable outside Solana — on Ethereum, Cosmos, or any chain
-- Foundation for trustless bridges and zk-light clients
-
-**Why this matters:** Solana today doesn't expose raw finality proofs in a portable format. This module fills that gap — enabling trustless cross-chain verification without relying on a centralized bridge relayer.
-
-### 🔮 Phase 10 — zk-light client
-- Verify Solana state transitions using zero-knowledge proofs
-- No need to replay the full ledger — verify correctness with a proof
-- Cross-client testing against Agave and Firedancer
+It covers:
+- Why `#[serde(with = "serde_varint")]` on `wallclock` was the #1 bug (7-byte cascading field shift)
+- How `SocketEntry.offset` is a cumulative port offset, not an absolute port
+- Why the `cache` field needed a custom `Deserialize` via `ContactInfoLite`
+- How `CrdsValue.hash` was adding 32 poison bytes to every message
+- Byte-level wire format of every struct before and after fixes
+- Complete 5-message devnet conversation traced byte-by-byte
 
 ---
 
@@ -128,21 +86,29 @@ This is where the project gets real. You open a UDP socket, speak Solana's gossi
 ```
 solana-protocol-gym/
 ├── crates/
-│   ├── dc-gossip/        # CRDS, peer discovery, UDP/QUIC sockets
-│   ├── dc-tvu/           # Turbine shred receiver, erasure coding
-│   ├── dc-tpu/           # QUIC transaction forwarding
-│   ├── dc-ledger/        # Blockstore, account state, ledger DB
-│   ├── dc-poh/           # Proof of History verifier
-│   ├── dc-consensus/     # Tower BFT simulator
-│   ├── dc-runtime/       # Sealevel-lite execution engine
-│   ├── dc-rpc/           # JSON-RPC server
-│   └── dc-cli/           # CLI entry points
-├── configs/
+│   ├── dc-gossip/        # ✅ CRDS, peer discovery, UDP sockets
+│   │   ├── src/
+│   │   │   ├── main.rs           # gossip loop, cluster info table
+│   │   │   ├── contact_info.rs   # ContactInfo, Version, SocketEntry
+│   │   │   ├── crds.rs           # CRDS table with merge/prune
+│   │   │   ├── crds_data.rs      # CrdsData enum, CrdsValue
+│   │   │   ├── protocol.rs       # Protocol enum, encode/decode
+│   │   │   ├── handler.rs        # message handler
+│   │   │   ├── ping_pong.rs      # Ping/Pong structs
+│   │   │   ├── pull_request.rs   # PullRequest builder
+│   │   │   └── transport.rs      # UDP socket wrapper
+│   │   └── GOSSIP_DETAILS.md     # complete debugging write-up
+│   ├── dc-tvu/           # ⏳ placeholder
+│   ├── dc-tpu/           # ⏳ placeholder
+│   ├── dc-ledger/        # ⏳ placeholder
+│   ├── dc-poh/           # ⏳ placeholder
+│   ├── dc-consensus/     # ⏳ placeholder
+│   ├── dc-runtime/       # ⏳ placeholder
+│   ├── dc-rpc/           # ⏳ placeholder
+│   └── dc-cli/           # ⏳ placeholder
 ├── docs/
 └── examples/
 ```
-
-Each crate is independent. Pull in only what you need.
 
 ---
 
@@ -166,10 +132,42 @@ cargo build
 
 ### Run gossip listener
 ```bash
-cargo run --bin dc-gossip
+RUST_LOG=info cargo run --bin dc-gossip
 ```
 
-You should start seeing mainnet validators announce themselves within seconds.
+You should see validators discovered from Solana devnet within seconds, with a full cluster info table every 30 seconds.
+
+---
+
+## Roadmap
+
+### ✅ Phase 1 — Gossip (done)
+- ✅ Ping/Pong handshake with any gossip entrypoint
+- ✅ PullRequest/PullResponse — discover 50+ peers
+- ✅ ContactInfo decoding with all socket addresses and versions
+- ✅ CRDS table with merge, prune, and dedup
+- ✅ Per-value error recovery in PullResponse parsing
+- ✅ Cluster info table display
+- ✅ Full debugging write-up in `GOSSIP_DETAILS.md`
+
+### 🔜 Phase 2 — TVU / Turbine (block receiver)
+- Bind to TVU port and receive raw shreds from the network
+- Parse data shreds and coding shreds
+- Implement Reed-Solomon erasure reconstruction
+- Reassemble shreds into full blocks
+
+### 🔜 Phase 3 — Proof of History verifier
+- Implement PoH hash chain replay in Rust
+- Verify time-ordering of transactions cryptographically
+
+### 🔜 Phase 4 — TPU / QUIC (transaction sender)
+- Build a QUIC client that connects directly to validator TPU ports
+- Send raw transaction bytes — no RPC, no middleware
+
+### 🔜 Phase 5+ — Consensus, Runtime, RPC
+- Tower BFT simulator with vote fork visualization
+- Sealevel-lite parallel transaction execution
+- JSON-RPC server serving local ledger data
 
 ---
 
@@ -188,11 +186,12 @@ solana-protocol-gym is an independent implementation. It is not a fork of Agave.
 
 Where Agave optimises for production performance, this project optimises for clarity. Where Agave abstracts away wire-level details, this project exposes them. The goal is not to replace Agave — it is to make Agave understandable.
 
-Key source references used during implementation:
-- `solana/ledger/src/shred.rs` — shred structure and erasure coding
-- `solana/turbine/src/turbine.rs` — block propagation tree
-- `solana/core/src/banking_stage` — transaction processing pipeline
-- `solana/core/src/consensus` — Tower BFT implementation
+Key source references used during gossip implementation:
+- `solana/gossip/src/contact_info.rs` — ContactInfo struct, SocketEntry, cumulative port offsets, custom Deserialize via ContactInfoLite
+- `solana/gossip/src/crds_value.rs` — CrdsValue with hash skip, manual Deserialize
+- `solana/gossip/src/protocol.rs` — Protocol enum discriminants
+- `solana/gossip/src/cluster_info.rs` — PullRequest handler, shred version check
+- `solana/version/src/v3.rs` — Version struct with varint annotations
 
 ---
 
