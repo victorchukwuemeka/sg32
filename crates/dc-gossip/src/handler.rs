@@ -1,31 +1,69 @@
 use crate::crds::CrdsTable;
 use crate::emitter::GossipTx;
+use crate::ping_pong::{Ping, Pong};
 use crate::protocol::Protocol;
+use crate::transport::Transport;
 use anyhow::Result;
+use solana_sdk::pubkey::Pubkey;
+use solana_sdk::signer::keypair::Keypair;
+use solana_sdk::signer::Signer;
+use std::collections::HashSet;
 use std::net::SocketAddr;
 
-pub async fn handler(
-    sender: SocketAddr,
-    msg: Protocol,
-    table: &mut CrdsTable,
-    tx: &GossipTx,
-) -> Result<()> {
-    match msg {
-        Protocol::PushMessage(pubkey, values) => {
-            tracing::info!("Push from {}", pubkey);
-            // TODO: merge values into crds
+pub struct Handler;
+
+impl Handler {
+    /// Process an incoming gossip message.
+    /// Returns newly discovered gossip addresses.
+    pub async fn handle(
+        msg: Protocol,
+        sender: SocketAddr,
+        table: &mut CrdsTable,
+        tx: &GossipTx,
+        transport: &Transport,
+        keypair: &Keypair,
+    ) -> Result<HashSet<SocketAddr>> {
+        let mut new_peers = HashSet::new();
+
+        match msg {
+            Protocol::PushMessage(_, values) | Protocol::PullResponse(_, values) => {
+                for value in values {
+                    let pk = value.pubkey();
+                    if table.merge(value) {
+                        tracing::info!("new/updated entry from {pk}");
+                    }
+                }
+
+                for info in table.get_contact_infos() {
+                    if info.0 != keypair.pubkey() {
+                        new_peers.insert(info.1);
+                    }
+                }
+            }
+
+            Protocol::PingMessage(ping) => {
+                let pong = Pong::new(&ping, keypair)?;
+                transport
+                    .send(
+                        &Protocol::PongMessage(pong).encode_to()?,
+                        &sender,
+                    )
+                    .await?;
+                tracing::debug!("replied Pong to {sender}");
+            }
+
+            Protocol::PruneMessage(pubkey, _) => {
+                tracing::debug!("Prune from {pubkey}");
+            }
+
+            _ => {}
         }
-        Protocol::PullResponse(pubkey, values) => {
-            tracing::info!("Pull response from {} — {} values", pubkey, values.len());
-            // TODO: merge values into crds
+
+        // Emit events
+        for event in table.drain_events() {
+            let _ = tx.send(event);
         }
-        Protocol::PingMessage(ping) => {
-            tracing::info!("Ping from {}", ping.from);
-            // TODO: send Pong back
-        }
-        _ => {
-            tracing::info!("unknown message from {}", sender);
-        }
+
+        Ok(new_peers)
     }
-    Ok(())
 }

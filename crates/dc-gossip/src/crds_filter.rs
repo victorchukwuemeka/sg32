@@ -23,6 +23,49 @@ impl CrdsFilter {
     }
 }
 
+// NOTE about bloom sizing:
+//   HOW AGAVE DOES IT:
+//   Agave's `get_max_bloom_filter_bytes(caller)` computes the exact byte budget for the bloom:
+//     let available = PACKET_DATA_SIZE - 4(enum tag) - caller.bincode_serialized_size()
+//     let bloom_max_bytes = precomputed_cache[available]
+//   The cache maps serialized-CrdsFilter-size → max-bloom-bytes by iterating all possible
+//   bloom sizes (1..PACKET_DATA_SIZE) and recording what serialized size each produces.
+//   This guarantees the full Protocol::PullRequest(CrdsFilter, CrdsValue) fits in one packet.
+//
+//   SIMPLIFIED APPROACH (used here):
+//   We estimate: CrdsFilter wire size ≈ 8(bincode vec prefix) + bloom_bytes + 8(mask) + 4(mask_bits)
+//   The caller picks a bloom_max_bytes that leaves room for that overhead.
+//   See pull_request.rs for where the budget is computed.
+impl CrdsFilter {
+    /// Creates a `CrdsFilter` whose bloom bit-array is limited to `bloom_max_bytes * 8` bits.
+    /// `num_items` is the number of entries expected — used to compute mask_bits for
+    /// partitioning the filter space (higher mask_bits = more sub-filters, fewer collisions).
+    pub fn new(bloom_max_bytes: usize, num_items: usize) -> Self {
+        // Convert the byte budget to a bit budget
+        let max_bits = (bloom_max_bytes * 8) as f64;
+        let false_rate: f64 = 0.1;
+        let num_keys: f64 = 8.0;
+
+        // Standard bloom filter capacity formula:
+        //   max_items = max_bits / (-num_keys / ln(1 - p^(1/num_keys)))
+        // where p = false positive rate, k = number of hash functions
+        let ln_p = false_rate.ln();
+        let inner = 1.0f64 - (ln_p / num_keys).exp();
+        let max_items = (max_bits / (-num_keys / inner.ln())).ceil() as usize;
+
+        // Determine mask_bits: how many bits of the hash to use for partitioning
+        let num_items_u32 = num_items.min(max_items) as u32;
+        let max_items_u32 = max_items as u32;
+        let mask_bits = compute_mask_bits(num_items_u32, max_items_u32);
+
+        Self {
+            filter: Bloom::random(max_items, false_rate, max_bits as usize),
+            mask: compute_mask(0, mask_bits),
+            mask_bits,
+        }
+    }
+}
+
 fn compute_mask(seed: u64, mask_bits: u32) -> u64 {
     if mask_bits == 0 {
         return u64::MAX;

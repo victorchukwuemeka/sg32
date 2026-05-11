@@ -102,21 +102,12 @@ impl CrdsValue {
 */
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum CrdsData {
-    LegacyContactInfo(Vec<u8>),         // 0 - deprecated, just bytes
-    Vote(u8, Vec<u8>),                  // 1
-    LowestSlot(u8, Vec<u8>),            // 2
-    LegacySnapshotHashes(Vec<u8>),      // 3
-    AccountsHashes(Vec<u8>),            // 4
-    EpochSlots(u8, Vec<u8>),            // 5
-    LegacyVersion(Vec<u8>),             // 6
-    Version(Vec<u8>),                   // 7
-    NodeInstance(Vec<u8>),              // 8
-    DuplicateShred(u16, Vec<u8>),       // 9
-    SnapshotHashes(Vec<u8>),            // 10
-    ContactInfo(ContactInfo),           // 11 ← our real one
-    RestartLastVotedForkSlots(Vec<u8>), // 12
-    RestartHeaviestFork(Vec<u8>),       // 13
+pub struct PruneData {
+    pub pubkey: Pubkey,
+    pub prunes: Vec<Pubkey>,
+    pub signature: Signature,
+    pub destination: Pubkey,
+    pub wallclock: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -126,17 +117,19 @@ pub struct PullRequest {
     pub known: Vec<String>,
 }
 
-//#[derive(Debug, Clone, Serialize, Deserialize)]
-/**pub struct PullResponse {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PullResponse {
     pub from: Pubkey,
     pub values: Vec<CrdsValue>,
-}**/
+}
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Protocol {
     PullRequest(CrdsFilter, CrdsValue),
     PullResponse(Pubkey, Vec<CrdsValue>),
     PushMessage(Pubkey, Vec<CrdsValue>),
+    PruneMessage(Pubkey, PruneData),
     PingMessage(Ping),
     PongMessage(Pong),
     Unknown,
@@ -151,3 +144,4 @@ impl Protocol {
         Ok(bincode::deserialize(bytes)?)
     }
 }
+

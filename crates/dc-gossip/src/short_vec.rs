@@ -37,7 +37,6 @@ pub fn decode_len(bytes: &[u8]) -> (usize, usize) {
         // take lower 7 bits
         len |= ((byte & 0x7F) as usize) << (i * 7);
         bytes_read += 1;
-
         // if high bit not set — we're done
         if byte & 0x80 == 0 {
             break;

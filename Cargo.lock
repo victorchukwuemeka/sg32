@@ -881,6 +881,8 @@ dependencies = [
  "solana-bloom",
  "solana-hash 2.3.0",
  "solana-sdk",
+ "solana-serde-varint 3.0.1",
+ "solana-short-vec",
  "solana-version",
  "thiserror",
  "tokio",

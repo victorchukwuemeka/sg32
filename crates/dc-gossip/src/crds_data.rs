@@ -190,7 +190,7 @@ pub struct Uncompressed {
 pub struct CrdsValue {
     pub signature: Signature,
     pub data: CrdsData,
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     pub hash: Hash,
 }
 
@@ -238,6 +238,27 @@ impl CrdsValue {
         let mut value = Self::unsigned_new_data(data);
         value.sign(keypair);
         value
+    }
+}
+
+impl CrdsValue {
+    pub fn wallclock(&self) -> u64 {
+        match &self.data {
+            CrdsData::LegacyContactInfo(ci) => ci.wallclock,
+            CrdsData::Vote(_, v) => v.wallclock,
+            CrdsData::LowestSlot(_, s) => s.wallclock,
+            CrdsData::LegacySnapshotHashes(h) => h.wallclock,
+            CrdsData::AccountsHashes(h) => h.wallclock,
+            CrdsData::EpochSlots(_, e) => e.wallclock,
+            CrdsData::LegacyVersion(v) => v.wallclock,
+            CrdsData::Version(v) => v.wallclock,
+            CrdsData::NodeInstance(n) => n.wallclock,
+            CrdsData::DuplicateShred(_, s) => s.wallclock,
+            CrdsData::SnapshotHashes(h) => h.wallclock,
+            CrdsData::ContactInfo(ci) => ci.wallclock,
+            CrdsData::RestartLastVotedForkSlots(s) => s.wallclock,
+            CrdsData::RestartHeaviestFork(f) => f.wallclock,
+        }
     }
 }
 
