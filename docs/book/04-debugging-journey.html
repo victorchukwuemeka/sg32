@@ -1,0 +1,632 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>4. The Debugging Journey - How Solana Gossip Really Works</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="A byte-level journey into the Solana devnet gossip protocol — building a working client from scratch, debugging wire format mismatches, and finally talking to the network.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-2459343d.css">
+        <link rel="stylesheet" href="css/chrome-ae938929.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-e7474215.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-0021db9f.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">How Solana Gossip Really Works</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/victorchukwuemeka/solana-protocol-gym" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/victorchukwuemeka/solana-protocol-gym/edit/main/docs/src/src/04-debugging-journey.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <span class=fa-svg id="git-edit-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M421.7 220.3l-11.3 11.3-22.6 22.6-205 205c-6.6 6.6-14.8 11.5-23.8 14.1L30.8 511c-8.4 2.5-17.5 .2-23.7-6.1S-1.5 489.7 1 481.2L38.7 353.1c2.6-9 7.5-17.2 14.1-23.8l205-205 22.6-22.6 11.3-11.3 33.9 33.9 62.1 62.1 33.9 33.9zM96 353.9l-9.3 9.3c-.9 .9-1.6 2.1-2 3.4l-25.3 86 86-25.3c1.3-.4 2.5-1.1 3.4-2l9.3-9.3H112c-8.8 0-16-7.2-16-16V353.9zM453.3 19.3l39.4 39.4c25 25 25 65.5 0 90.5l-14.5 14.5-22.6 22.6-11.3 11.3-33.9-33.9-62.1-62.1L314.3 67.7l11.3-11.3 22.6-22.6 14.5-14.5c25-25 65.5-25 90.5 0z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h2 id="4-the-debugging-journey"><a class="header" href="#4-the-debugging-journey">4. The Debugging Journey</a></h2>
+<blockquote>
+<p>This section tells the story in chronological order — every hypothesis, every dead end, every “aha” moment. It starts with the original wire-format bugs (Phases 1-4), then covers the second wave of bugs (Phase 5) that appeared only after the entrypoint started talking back.</p>
+</blockquote>
+<hr>
+<h3 id="phase-1-ping-works-pullrequest-gets-ignored"><a class="header" href="#phase-1-ping-works-pullrequest-gets-ignored">Phase 1: Ping Works, PullRequest Gets Ignored</a></h3>
+<p><strong>Observation:</strong> The Ping/Pong handshake succeeded on the first attempt (132 bytes each way). But after sending the PullRequest (1228 bytes), we received nothing — no Ping from the entrypoint, no PullResponse data, absolutely zero bytes back.</p>
+<p><strong>Hypothesis 1:</strong> The entrypoint doesn’t like our PullRequest format.</p>
+<p><strong>Investigation:</strong> We read the Agave source code to understand how the entrypoint processes incoming PullRequest messages.</p>
+<p><strong>Command:</strong></p>
+<pre><code class="language-bash">rg -n "Protocol::PullRequest" /home/victor/opensource/agave/gossip/src/cluster_info.rs
+</code></pre>
+<p><strong>Found the handler at line 2038:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>Protocol::PullRequest(filter, caller) =&gt; {
+    if !check_pull_request_shred_version(self_shred_version, &amp;caller) {
+        // ← This was triggering!
+        self.stats.skip_pull_shred_version.add_relaxed(1);
+        continue;  // Skip this packet entirely
+    }
+    // ... process the pull request
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Found the shred version check at line 2441:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn check_pull_request_shred_version(self_shred_version: u16, caller: &amp;CrdsValue) -&gt; bool {
+    let shred_version = match caller.data() {
+        CrdsData::ContactInfo(node) =&gt; node.shred_version(),
+        _ =&gt; return false,  // ← We were hitting this!
+    };
+    shred_version == self_shred_version
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Discovered:</strong> The entrypoint calls <code>caller.data()</code> — which extracts <code>CrdsData</code> from the <code>CrdsValue</code> we sent. It expects <code>CrdsData::ContactInfo(node)</code>. If the <code>CrdsData</code> deserialization fails (wrong variant, wrong field positions, etc.), the match falls through to <code>_ =&gt; return false</code>, and our PullRequest is skipped with <code>continue</code>.</p>
+<p><strong>Question:</strong> Why was our <code>CrdsData::ContactInfo(ContactInfo)</code> failing to deserialize? The <code>ContactInfo</code> struct we defined looked correct at a glance — it had the right fields (pubkey, wallclock, outset, shred_version, version, addrs, sockets, etc.). But Agave uses specific serde annotations that silently change the wire format.</p>
+<p><strong>What we needed to figure out:</strong> What does Agave’s ContactInfo actually look like on the wire, byte by byte?</p>
+<hr>
+<h3 id="phase-2-chasing-the-wrong-clue-version-struct"><a class="header" href="#phase-2-chasing-the-wrong-clue-version-struct">Phase 2: Chasing the Wrong Clue (Version struct)</a></h3>
+<p><strong>First obvious difference we spotted:</strong> Our <code>Version</code> struct looked different from Agave’s.</p>
+<p><strong>Agave Version (agave/version/src/v3.rs:10-22):</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Version {
+    #[serde(with = "serde_varint")]  pub major: u16,    // ← NOTE THE ANNOTATION
+    #[serde(with = "serde_varint")]  pub minor: u16,
+    #[serde(with = "serde_varint")]  pub patch: u16,
+    pub commit: u32,                                      // ← NOT Option&lt;u32&gt;
+    pub feature_set: u32,
+    #[serde(with = "serde_varint")]  client: u16,
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Our Version before the fix:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Version {
+    pub major: u16,              // No annotation → 2 bytes
+    pub minor: u16,              // No annotation → 2 bytes
+    pub patch: u16,              // No annotation → 2 bytes
+    pub commit: Option&lt;u32&gt;,     // Different TYPE → tag byte + 4 bytes
+    pub feature_set: u32,
+    pub client: u16,             // No annotation → 2 bytes
+}
+<span class="boring">}</span></code></pre>
+<p><strong>What’s varint encoding?</strong>
+Varint (variable-length integer) encoding stores small numbers in fewer bytes. Each byte uses 7 bits for the value and 1 bit (the MSB) as a continuation flag:</p>
+<ul>
+<li><code>0xxxxxxx</code> → last byte, value = lower 7 bits</li>
+<li><code>1xxxxxxx</code> → more bytes follow, value = lower 7 bits</li>
+</ul>
+<p>So <code>major = 2</code> is:</p>
+<ul>
+<li>Without varint: <code>0x02 0x00</code> (2 bytes, u16 little-endian)</li>
+<li>With varint: <code>0x02</code> (1 byte, encoded in a single byte since value &lt; 128)</li>
+</ul>
+<p>And <code>commit: Option&lt;u32&gt;</code> vs <code>commit: u32</code>:</p>
+<ul>
+<li><code>Option&lt;u32&gt;</code> serializes as: 1 byte tag (0=None, 1=Some) + 4 bytes value = 5 bytes if Some</li>
+<li><code>u32</code> serializes as: 4 bytes always</li>
+</ul>
+<p>We made our Version match Agave’s exactly:</p>
+<p><strong>Version after fix:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Version {
+    #[serde(with = "serde_varint")]  pub major: u16,
+    #[serde(with = "serde_varint")]  pub minor: u16,
+    #[serde(with = "serde_varint")]  pub patch: u16,
+    pub commit: u32,
+    pub feature_set: u32,
+    #[serde(with = "serde_varint")]  pub client: u16,
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Result after this fix:</strong> PullRequest went from 1228 → 1227 bytes. Only 1 byte change, not the ~5 we expected. Something was still wrong.</p>
+<p>We had to add the <code>solana-serde-varint</code> crate to Cargo.toml to get the <code>serde_varint</code> module:</p>
+<pre><code class="language-toml">solana-serde-varint = "3"
+</code></pre>
+<hr>
+<h3 id="phase-3-the-crdsvalue-hash-trap"><a class="header" href="#phase-3-the-crdsvalue-hash-trap">Phase 3: The CrdsValue hash Trap</a></h3>
+<p><strong>Next difference spotted:</strong> Our <code>CrdsValue</code> struct included the <code>hash</code> field on the wire. Agave doesn’t.</p>
+<p><strong>Agave CrdsValue (agave/gossip/src/crds_value.rs:24-30):</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct CrdsValue {
+    signature: Signature,
+    data: CrdsData,
+    #[serde(skip_serializing)]    // ← NOTE: NOT on wire!
+    hash: Hash,
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Our CrdsValue before:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct CrdsValue {
+    pub signature: Signature,
+    pub data: CrdsData,
+    pub hash: Hash,              // ← This IS on wire! 32 extra bytes!
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Why does Agave skip the hash?</strong> The hash is <code>sha256(signature || serialized(data))</code>. It’s a computed field — there’s no need to send it because any recipient can recompute it. On the sending side, the hash is used for CRDT deduplication (checking if you’ve already seen this value). On the receiving side, Agave has a manual <code>Deserialize</code> implementation that computes the hash from the deserialized data.</p>
+<p><strong>Impact of our bug:</strong> Each <code>CrdsValue</code> we sent had 32 extra bytes of hash. This:</p>
+<ol>
+<li>Bloated the PullRequest packet (32 bytes extra in the CalerValue)</li>
+<li>Changed the bloom filter budget calculation (because <code>cellor_size</code> was used to compute how much room the bloom filer has)</li>
+</ol>
+<p><strong>The fix:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct CrdsValue {
+    pub signature: Signature,
+    pub data: CrdsData,
+    #[serde(skip)]              // ← Skip BOTH serialize and deserialize
+    pub hash: Hash,
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Why <code>skip</code> instead of <code>skip_serializing</code>?</strong> Agave uses <code>skip_serializing</code> only, but they have a <strong>manual</strong> <code>Deserialize</code> implementation. The manual impl uses a helper struct without the hash field, so hash is never read from the wire. We use <code>#[serde(skip)]</code> which skips both directions and falls back to <code>Default::default()</code> for the hash value during deserialization.</p>
+<p><strong>Agave’s manual Deserialize impl (lines 213-237):</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl&lt;'de&gt; Deserialize&lt;'de&gt; for CrdsValue {
+    fn deserialize&lt;D&gt;(deserializer: D) -&gt; Result&lt;Self, D::Error&gt; {
+        // Helper struct WITHOUT hash field
+        #[derive(Deserialize)]
+        struct CrdsValue {
+            signature: Signature,
+            data: CrdsData,
+        }
+        let CrdsValue { signature, data } = CrdsValue::deserialize(deserializer)?;
+        // Compute hash from the deserialized data
+        let hash = sha256(signature || serialize(data));
+        Ok(Self { signature, data, hash })
+    }
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Result after this fix:</strong> PullRequest went from 1227 → 1232 bytes (full <code>PACKET_DATA_SIZE</code>). The bloom filter got 32 more bytes of budget and expanded to fill the available space.</p>
+<p>But still — <strong>the entrypoint wasn’t responding</strong>. The Version and hash fixes were necessary but not sufficient.</p>
+<hr>
+<h3 id="phase-4-the-real-root-cause--contactinfo-serialization"><a class="header" href="#phase-4-the-real-root-cause--contactinfo-serialization">Phase 4: The REAL Root Cause — ContactInfo Serialization</a></h3>
+<p>This is where we found THE bug — the one that was actually causing the entrypoint to reject us.</p>
+<p>We finally did a proper side-by-side comparison of our entire <code>ContactInfo</code> struct against Agave’s.</p>
+<p><strong>Agave ContactInfo (gossip/src/contact_info.rs:80-101, verified in v2.2.0 tag):</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct ContactInfo {
+    pubkey: Pubkey,
+    #[serde(with = "serde_varint")]    wallclock: u64,      // ← VARINT!
+    outset: u64,
+    shred_version: u16,
+    version: solana_version::Version,  // (with varint fields)
+    #[serde(with = "short_vec")]       addrs: Vec&lt;IpAddr&gt;,  // ← SHORT VEC!
+    #[serde(with = "short_vec")]       sockets: Vec&lt;SocketEntry&gt;, // ← SHORT VEC!
+    #[serde(with = "short_vec")]       extensions: Vec&lt;Extension&gt;, // ← SHORT VEC!
+    #[serde(skip_serializing)]         cache: [SocketAddr; SOCKET_CACHE_SIZE], // ← SKIP!
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Our ContactInfo before the fix:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct ContactInfo {
+    pub pubkey: Pubkey,
+    pub wallclock: u64,              // ← NO VARINT → 8 bytes instead of ~5
+    pub outset: u64,
+    pub shred_version: u16,
+    pub version: Version,            // (before Version fix: +5 bytes)
+    pub addrs: Vec&lt;IpAddr&gt;,          // ← NO SHORT_VEC → u64 len instead of varint
+    pub sockets: Vec&lt;SocketEntry&gt;,   // ← NO SHORT_VEC
+    pub extensions: Vec&lt;Extension&gt;,  // ← NO SHORT_VEC
+    pub cache: [SocketAddr; 14],     // ← SERIALIZED! 208 extra bytes!
+}
+<span class="boring">}</span></code></pre>
+<p><strong>The wallclock bomb — explained byte by byte:</strong></p>
+<p>This was the single most destructive bug. Here’s exactly what happens:</p>
+<p>Our wallclock value is a microsecond timestamp from <code>SystemTime::now().duration_since(UNIX_EPOCH).as_micros()</code>. At the time of testing, this was approximately <code>1,746,000,000,000,000</code> — about 1.7 quadrillion microseconds since epoch.</p>
+<p>In hexadecimal: <code>0x000634B88C3C8000</code></p>
+<p>In little-endian bytes (how bincode writes a u64):</p>
+<pre><code>Byte 0: 0x00  (LSB)
+Byte 1: 0x80
+Byte 2: 0x3C
+Byte 3: 0x8C
+Byte 4: 0xB8
+Byte 5: 0x34
+Byte 6: 0x06
+Byte 7: 0x00  (MSB)
+</code></pre>
+<p>When Agave reads this as a <strong>varint</strong> (because its ContactInfo has <code>#[serde(with = "serde_varint")]</code> on wallclock):</p>
+<pre><code>Byte 0: 0x00
+  → MSB = 0 → this is the LAST byte of the varint
+  → value = 0x00 = 0
+  → wallclock = 0  ← WRONG!
+</code></pre>
+<p>Agave consumed only <strong>1 byte</strong> for wallclock, not 8! The remaining 7 bytes (<code>80 3C 8C B8 34 06 00</code>) are now interpreted as the start of the <strong>next field</strong> (<code>outset</code>).</p>
+<p>This means:</p>
+<ul>
+<li><code>wallclock</code> on their side = 0 (should be ~1.7 quadrillion)</li>
+<li><code>outset</code> on their side = bytes 1-8 of our wallclock field (should be a different timestamp)</li>
+<li>Every field after is shifted by 7 bytes</li>
+</ul>
+<p>This cascading misalignment corrupts the <strong>entire</strong> ContactInfo. The <code>shred_version</code> field gets read from the wrong offset, producing a garbage value that doesn’t match the devnet shred_version (11016), so <code>check_pull_request_shred_version()</code> returns false.</p>
+<p><strong>The short_vec impact:</strong></p>
+<p>Agave uses <code>short_vec</code> for all Vec fields. This replaces bincode’s default u64 length prefix (8 bytes) with a varint-encoded length (1-3 bytes for real-world sizes).</p>
+<p>For a Vec with 1 element:</p>
+<ul>
+<li>Without short_vec: <code>01 00 00 00 00 00 00 00</code> (8 bytes, u64 little-endian)</li>
+<li>With short_vec: <code>01</code> (1 byte, varint)</li>
+</ul>
+<p>For 3 Vec fields (addrs, sockets, extensions):</p>
+<ul>
+<li>Savings: 7 + 7 + 7 = 21 bytes total</li>
+</ul>
+<p><strong>The cache bomb:</strong></p>
+<p>Without <code>#[serde(skip_serializing)]</code>, the <code>cache: [SocketAddr; 14]</code> field serializes as 208-224 bytes of zeros (14 SocketAddr entries, each is 16 bytes on a 64-bit system).</p>
+<p><strong>The complete fix for ContactInfo:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use solana_serde_varint as serde_varint;
+use solana_short_vec as short_vec;
+
+pub struct ContactInfo {
+    pub pubkey: Pubkey,
+    #[serde(with = "serde_varint")]
+    pub wallclock: u64,              // ← FIXED
+    pub outset: u64,
+    pub shred_version: u16,
+    pub version: Version,
+    #[serde(with = "short_vec")]
+    pub addrs: Vec&lt;IpAddr&gt;,          // ← FIXED
+    #[serde(with = "short_vec")]
+    pub sockets: Vec&lt;SocketEntry&gt;,   // ← FIXED
+    #[serde(with = "short_vec")]
+    pub extensions: Vec&lt;Extension&gt;,  // ← FIXED
+    #[serde(skip_serializing)]
+    pub cache: [SocketAddr; 13],     // ← FIXED (also changed 14→13)
+}
+<span class="boring">}</span></code></pre>
+<p>Plus <code>SocketEntry.offset</code> also needs varint:</p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct SocketEntry {
+    pub key: u8,
+    pub index: u8,
+    #[serde(with = "serde_varint")]
+    pub offset: u16,                 // ← FIXED
+}
+<span class="boring">}</span></code></pre>
+<p><strong>After all fixes — the moment of truth:</strong></p>
+<pre><code>Ping sent... Pong received! ✓
+PullRequest: 1232 bytes (full PACKET_DATA_SIZE) ✓
+GOT PACKET from 35.197.53.105:8001: 132 bytes → Got Ping from entrypoint! ✓
+new/updated entry from 9Y8V9NHwXikBFDmrYUQvKFkyWAV4KcHtuMQqq5XMjsrh ✓
+new/updated entry from 964koDACp6GNSW8uL2J49CTa7kuFSQWPErgKMKK1E9QH ✓
+...
+CRDS: 18 entries, 1 peers ✓
+</code></pre>
+<p>The entrypoint accepted our PullRequest, passed the shred version check, queued our request, sent us a Ping (which we responded to with Pong), and then started sending us actual gossip data containing valid validator records.</p>
+<p>But now a new problem emerged — we could see peers in the CRDS table, <strong>but every port showed “none”</strong>.</p>
+<hr>
+<h3 id="phase-5-the-second-wave--port-offsets-and-cache-poisoning"><a class="header" href="#phase-5-the-second-wave--port-offsets-and-cache-poisoning">Phase 5: The Second Wave — Port Offsets and Cache Poisoning</a></h3>
+<p>Now that the entrypoint was actually sending us data, two new bugs became visible:</p>
+<p><strong>Bug A: Cumulative port offsets</strong></p>
+<p>Agave’s <code>SocketEntry.offset</code> is <strong>not</strong> an absolute port — it’s a port offset relative to the previous entry. To get the actual port for a socket, you accumulate offsets in order.</p>
+<p><strong>Agave’s get_socket (gossip/src/contact_info.rs:312-330):</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn get_socket(&amp;self, key: u8) -&gt; Result&lt;SocketAddr, Error&gt; {
+    let mut port = 0u16;
+    for entry in &amp;self.sockets {
+        port += entry.offset;        // ← CUMULATIVE, not absolute!
+        if entry.key == key {
+            let addr = self.addrs.get(usize::from(entry.index))?;
+            return Ok(SocketAddr::new(*addr, port));
+        }
+    }
+    Err(Error::SocketNotFound(key))
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Our broken socket_by_key:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn socket_by_key(&amp;self, key: u8) -&gt; Option&lt;SocketAddr&gt; {
+    self.sockets.iter().find(|s| s.key == key).and_then(|entry| {
+        let ip = self.addrs.get(entry.index as usize)?;
+        Some(SocketAddr::new(*ip, entry.offset))  // ← WRONG: used offset as absolute port!
+    })
+}
+<span class="boring">}</span></code></pre>
+<p>A real ContactInfo from devnet might have socket entries like:</p>
+<pre><code>key=0 (gossip),    offset=8001, index=0  → port = 0 + 8001 = 8001 ✓
+key=5 (TPU),       offset=2,    index=0  → port = 8001 + 2 = 8003 ✓
+key=9 (TPUvote),   offset=0,    index=0  → port = 8003 + 0 = 8003 ✓
+key=10 (TVU),      offset=-1,   index=0  → port = 8003 - 1 = 8002 ✓
+</code></pre>
+<p>Our old code treated <code>offset=2</code> for TPU as port <code>2</code> instead of <code>8003</code>.</p>
+<p>Encoded by <code>set_socket</code>: the first entry’s offset equals the full port. Each subsequent entry’s offset is the difference from the previous port. This differential encoding allows small varint values: the gossip port (8001) becomes a 2-byte varint, but subsequent offsets like 2, 0, or -1 are 1 byte each.</p>
+<p><strong>The fix:</strong></p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn socket_by_key(&amp;self, key: u8) -&gt; Option&lt;SocketAddr&gt; {
+    let mut port = 0u16;
+    for entry in &amp;self.sockets {
+        port = port.checked_add(entry.offset)?;  // ← cumulative!
+        if entry.key == key {
+            let ip = self.addrs.get(entry.index as usize)?;
+            return Some(SocketAddr::new(*ip, port));
+        }
+    }
+    None
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Bug B: The cache field — a poison pill for deserialization</strong></p>
+<p>Our <code>ContactInfo</code> had <code>#[serde(skip_serializing)]</code> on the <code>cache</code> field. This correctly skipped <code>cache</code> during serialization (it’s not on the wire). But since we derived <code>Deserialize</code>, serde still tried to <strong>read</strong> cache from the byte stream during deserialization. Since cache wasn’t in the stream, bincode would read the next 130 bytes (13 SocketAddrs × ~10 bytes each for IPv4) from whatever came after the ContactInfo data — which was the <strong>next CrdsValue’s buffer</strong>.</p>
+<p>This corrupted every downstream CrdsValue and silently consumed bytes that belonged to subsequent values.</p>
+<p><strong>The fix:</strong> Agave uses a two-struct approach — a <code>ContactInfoLite</code> without cache for deserialization, then populate cache from socket entries:</p>
+<pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Deserialize)]
+struct ContactInfoLite {
+    pubkey: Pubkey,
+    #[serde(with = "serde_varint")]
+    wallclock: u64,
+    outset: u64,
+    shred_version: u16,
+    version: Version,
+    #[serde(with = "short_vec")]
+    addrs: Vec&lt;IpAddr&gt;,
+    #[serde(with = "short_vec")]
+    sockets: Vec&lt;SocketEntry&gt;,
+    #[serde(with = "short_vec")]
+    extensions: Vec&lt;Extension&gt;,
+}
+
+impl&lt;'de&gt; Deserialize&lt;'de&gt; for ContactInfo {
+    fn deserialize&lt;D&gt;(deserializer: D) -&gt; Result&lt;Self, D::Error&gt; {
+        let lite = ContactInfoLite::deserialize(deserializer)?;
+        let mut cache = [SOCKET_ADDR_UNSPECIFIED; SOCKET_CACHE_SIZE];
+        let mut port = 0u16;
+        for entry in &amp;lite.sockets {
+            port = port.wrapping_add(entry.offset);
+            if let Some(cached) = cache.get_mut(usize::from(entry.key)) {
+                if let Some(addr) = lite.addrs.get(usize::from(entry.index)) {
+                    *cached = SocketAddr::new(*addr, port);
+                }
+            }
+        }
+        Ok(Self { pubkey: lite.pubkey, wallclock: lite.wallclock, ..., cache })
+    }
+}
+<span class="boring">}</span></code></pre>
+<p>We also had <code>SOCKET_CACHE_SIZE = 13</code> but Agave v2.2.x devnet actually uses 14 (tags 0-13, where tag 13 = Alpenglow). Fixed that too.</p>
+<p><strong>With both fixes, the cluster info table finally showed real data:</strong></p>
+<pre><code>  IP Address          | AgeMs | Node identifier                          | Version | Gossip | TPUvote | TPU  | TPUfwd | TVU  | TVU Q | ServeR | ShredVer
+  ----------------------------------------------------------------------------------------------------------------------------------------
+  208.91.110.147      | -     | ES5M2g5Lu4Cewkk...                       | 4.16384.0 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8010 |   11016
+  185.189.44.238      | -     | 3ne7n82Kqf1zPo4...                       | 4.32768.7 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8009 |   11016
+  151.202.34.247      | -     | iniPkjWxbT88TUAU...                       | 3.1.8   | 8001 |    8005 | 8003 |  8004 | 8000 |  8002 |  8012 |   11016
+</code></pre>
+<p>56 peers, all with correct ports. Peer discovery grew from 1 → 116 in ~25 seconds.</p>
+<hr>
+<h3 id="the-per-value-crdsvalue-fallback"><a class="header" href="#the-per-value-crdsvalue-fallback">The Per-Value CrdsValue Fallback</a></h3>
+<p>One more issue revealed itself: when a PullResponse contains a mix of CrdsData variants, and one fails to deserialize, the entire message was lost. We added a fallback in <code>Protocol::decode_from</code> that tries the fast path first (<code>bincode::deserialize</code> on the whole message), and if that fails, falls back to manual per-CrdsValue parsing that skips individual bad variants.</p>
+<pre><code>Fast path: bincode::deserialize::&lt;Protocol&gt;(bytes)
+  → If OK, great (most PullResponses with all-ContactInfo values)
+  → If error:
+    1. Read Protocol discriminant manually
+    2. For PullResponse/PushMessage (tags 1-2):
+       a. Read Pubkey (from)
+       b. Read u64 count
+       c. For each value: try bincode::deserialize::&lt;CrdsValue&gt;
+          → If OK: advance cursor by serialized_size
+          → If error: skip ahead by estimated size (64 bytes + CrdsData)
+</code></pre>
+<p>This way, a single bad Vote or LowestSlot variant doesn’t take down the whole PullResponse.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="03-starting-point.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="05-wire-format.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="03-starting-point.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="05-wire-format.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-c2a407aa.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>
