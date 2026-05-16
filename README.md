@@ -1,12 +1,12 @@
 # solana-protocol-gym
 
-> A full-stack Solana protocol implementation in Rust — built for engineers who want to understand the validator from the inside out.
+> A full-stack Solana protocol implementation in Rust — built for engineers who need trustless access to onchain data.
 
 This is not a dApp framework. It is not a wallet SDK. It is not another JSON-RPC wrapper.
 
 **solana-protocol-gym** is a ground-up implementation of the Solana validator stack — gossip, TVU, TPU, PoH, Tower BFT, Sealevel, and RPC — written in Rust, modular by design, and built to be read, hacked, and learned from.
 
-If you want to understand how Solana actually works at the wire level, this is where you start.
+**What makes this different:** We generate **Merkle inclusion proofs** and **ZK proofs** over the transaction set — trustless verification that a transaction was included in a specific slot, without running a full node. Solana's native RPC gives you none of this.
 
 ---
 
@@ -27,15 +27,16 @@ Every module implements a real piece of the Solana stack — same wire protocols
 ## What's inside
 
 | Module | Status | What it implements |
-|---|---|---|
+|---|---|---|---|
 | `dc-gossip` | ✅ **Working** | CRDS table, peer discovery, cluster info table — connects to devnet, discovers 50+ peers, shows versions and ports |
-| `dc-tvu` | ⏳ Planned | Shred receiver, erasure reconstruction, block assembly |
+| `dc-tvu` | 🔜 Building | Shred receiver, erasure reconstruction, block assembly |
+| `dc-prover` | 🔜 Building | **Merkle inclusion proofs** + **ZK proofs** over transaction sets — verify tx inclusion without trust |
 | `dc-tpu` | ⏳ Planned | Transaction forwarding to leader via QUIC |
 | `dc-ledger` | ⏳ Planned | Block storage, account state, ledger parsing |
 | `dc-poh` | ⏳ Planned | Proof of History hash chain verifier |
 | `dc-consensus` | ⏳ Planned | Tower BFT simulator — votes, forks, lockouts |
 | `dc-runtime` | ⏳ Planned | Sealevel-lite parallel transaction execution |
-| `dc-rpc` | ⏳ Planned | JSON-RPC surface over local replayed ledger |
+| `dc-rpc` | ⏳ Planned | RPC server serving proofs + raw data for bots and onchain products |
 | `dc-cli` | ⏳ Planned | CLI tools for every module |
 
 ---
@@ -81,6 +82,40 @@ It covers:
 
 ---
 
+## Why Proofs Matter
+
+Solana's native RPC is **trusted** — when you ask "was tx X included in slot Y?" the RPC node just says "yes" and you have to trust it. There is no cryptographic proof.
+
+**Solana doesn't have native Merkle inclusion proofs for transactions.** Ethereum has Patricia Merkle tries — you can prove inclusion with a 1KB proof. Solana has nothing comparable at the RPC layer.
+
+We fix that:
+
+```
+Normal RPC flow:
+  You ──► "was tx X in slot Y?" ──► RPC Node ──► "yes" (trust me bro)
+
+Our flow:
+  You ──► "was tx X in slot Y?" ──► Our Node
+                                      │
+                                      ▼
+                               Builds Merkle proof over
+                               the slot's transaction set
+                                      │
+                                      ▼
+                               "yes + here's the Merkle proof"
+                               You verify it yourself → no trust required
+
+  For ZK: same data, wrapped in a ZK proof → constant-size, private, verifiable anywhere
+```
+
+This enables:
+- **Trustless bridges** — prove Solana tx inclusion to Ethereum without running a Solana node
+- **Light clients** — verify a handful of transactions with a small proof instead of downloading the whole block
+- **Bots/trading** — verify their own tx submissions cryptographically
+- **Coprocessors** — ZK provers that consume verified Solana state
+
+---
+
 ## Architecture
 
 ```
@@ -98,7 +133,8 @@ solana-protocol-gym/
 │   │   │   ├── pull_request.rs   # PullRequest builder
 │   │   │   └── transport.rs      # UDP socket wrapper
 │   │   └── GOSSIP_DETAILS.md     # complete debugging write-up
-│   ├── dc-tvu/           # ⏳ placeholder
+│   ├── dc-tvu/           # 🔜 Shred receiver, block reassembly
+│   ├── dc-prover/        # 🔜 Merkle + ZK proof generation
 │   ├── dc-tpu/           # ⏳ placeholder
 │   ├── dc-ledger/        # ⏳ placeholder
 │   ├── dc-poh/           # ⏳ placeholder
@@ -155,28 +191,42 @@ You should see validators discovered from Solana devnet within seconds, with a f
 - Parse data shreds and coding shreds
 - Implement Reed-Solomon erasure reconstruction
 - Reassemble shreds into full blocks
+- Extract the native Merkle proofs embedded in every shred chain
 
-### 🔜 Phase 3 — Proof of History verifier
+### 🔜 Phase 3 — Merkle Inclusion Proofs
+- Build a Merkle tree over every transaction in a slot
+- Generate **inclusion proofs**: "tx X is in slot Y at position Z"
+- Serve proofs via RPC and a queryable API
+- Enable trustless tx verification without running a full node
+
+### 🔜 Phase 4 — ZK Proofs
+- Build ZK circuits for transaction set verification
+- Generate succinct proofs that a set of transactions was included in a slot
+- Enable light clients, bridges, and coprocessors to verify Solana data with constant-size proofs
+- Integrate with existing ZK ecosystems (RISC Zero, SP1, Circom)
+
+### 🔜 Phase 5 — Proof of History verifier
 - Implement PoH hash chain replay in Rust
 - Verify time-ordering of transactions cryptographically
 
-### 🔜 Phase 4 — TPU / QUIC (transaction sender)
+### 🔜 Phase 6 — TPU / QUIC (transaction sender)
 - Build a QUIC client that connects directly to validator TPU ports
 - Send raw transaction bytes — no RPC, no middleware
 
-### 🔜 Phase 5+ — Consensus, Runtime, RPC
+### 🔜 Phase 7+ — Consensus, Runtime, RPC
 - Tower BFT simulator with vote fork visualization
 - Sealevel-lite parallel transaction execution
-- JSON-RPC server serving local ledger data
+- High-performance RPC server serving proofs + raw block data for bots
 
 ---
 
 ## Who this is for
 
-- Engineers who want to contribute to Solana core (Agave, Firedancer, or ecosystem clients)
-- Developers transitioning from dApp development into protocol engineering
-- Anyone who has read the Solana whitepaper and wants to see it in running Rust code
-- Researchers building zk-light clients, bridges, or cross-chain interoperability tools
+- **Bots and trading firms** — need RPC access with verified transaction inclusion proofs
+- **Bridge builders** — trustless verification of Solana transactions on other chains
+- **ZK researchers** — building light clients, coprocessors, or cross-chain protocols that need verified onchain data
+- **Solana core contributors** — want to understand Agave/Firedancer from the wire up
+- **Protocol engineers** — building the next generation of Solana infrastructure
 
 ---
 
