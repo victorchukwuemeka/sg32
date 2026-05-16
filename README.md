@@ -27,17 +27,17 @@ Every module implements a real piece of the Solana stack — same wire protocols
 ## What's inside
 
 | Module | Status | What it implements |
-|---|---|---|---|
-| `dc-gossip` | ✅ **Working** | CRDS table, peer discovery, cluster info table — connects to devnet, discovers 50+ peers, shows versions and ports |
-| `dc-tvu` | 🔜 Building | Shred receiver, erasure reconstruction, block assembly |
-| `dc-prover` | 🔜 Building | **Merkle inclusion proofs** + **ZK proofs** over transaction sets — verify tx inclusion without trust |
-| `dc-tpu` | ⏳ Planned | Transaction forwarding to leader via QUIC |
-| `dc-ledger` | ⏳ Planned | Block storage, account state, ledger parsing |
-| `dc-poh` | ⏳ Planned | Proof of History hash chain verifier |
-| `dc-consensus` | ⏳ Planned | Tower BFT simulator — votes, forks, lockouts |
-| `dc-runtime` | ⏳ Planned | Sealevel-lite parallel transaction execution |
-| `dc-rpc` | ⏳ Planned | RPC server serving proofs + raw data for bots and onchain products |
-| `dc-cli` | ⏳ Planned | CLI tools for every module |
+|---|---|---|
+| `dc-gossip` | **Working** | CRDS table, peer discovery, cluster info table — connects to devnet, discovers 50+ peers, shows versions and ports |
+| `dc-tvu` | Building | Shred receiver, erasure reconstruction, block assembly |
+| `dc-prover` | Building | **Merkle inclusion proofs** + **ZK proofs** over transaction sets — verify tx inclusion without trust |
+| `dc-tpu` | Planned | Transaction forwarding to leader via QUIC |
+| `dc-ledger` | Planned | Block storage, account state, ledger parsing |
+| `dc-poh` | Planned | Proof of History hash chain verifier |
+| `dc-consensus` | Planned | Tower BFT simulator — votes, forks, lockouts |
+| `dc-runtime` | Planned | Sealevel-lite parallel transaction execution |
+| `dc-rpc` | Planned | RPC server serving proofs + raw data for bots and onchain products |
+| `dc-cli` | Planned | CLI tools for every module |
 
 ---
 
