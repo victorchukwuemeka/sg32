@@ -23,6 +23,8 @@
 
 ---
 
+
+
 ## 1. What is TVU?
 
 **TVU = Transaction Validation Unit.**
