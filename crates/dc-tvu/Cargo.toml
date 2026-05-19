@@ -1,0 +1,17 @@
+[package]
+name = "dc-tvu"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "dc-tvu"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+bincode = { workspace = true }
+serde_bytes = "0.11"
