@@ -105,8 +105,8 @@ Zero bytes came back after the PullRequest. The entrypoint was silently ignoring
 
 **Investigation:** We read the Agave source code to understand how the entrypoint processes incoming PullRequest messages.
 
-**Command:**  because i already have the agave source code in the system .
-```bash 
+**Command:**
+```bash
 rg -n "Protocol::PullRequest" /home/victor/opensource/agave/gossip/src/cluster_info.rs
 ```
 
