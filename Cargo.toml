@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/dc-gossip",
+    "crates/dc-tvu",
     "crates/dc-consensus",
     "crates/dc-ledger",
     "crates/dc-poh",
