@@ -925,19 +925,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dc-tvu"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bincode",
- "serde",
- "serde_bytes",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "derivation-path"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
