@@ -4,6 +4,7 @@ use tokio::net::UdpSocket;
 
 use dc_tvu::fec_batch::FecBatch;
 use dc_tvu::reed_solomon::{NUM_CODE_SHREDS, NUM_DATA_SHREDS};
+use dc_tvu::ring_buffer::{SlotData, SlotRingBuffer};
 use std::collections::HashMap;
 
 const PACKET_DATA_SIZE: usize = 1232;
@@ -15,6 +16,7 @@ async fn main() -> anyhow::Result<()> {
     let mut buf = vec![0u8; PACKET_DATA_SIZE];
 
     let mut batches: HashMap<ErasureSetId, FecBatch> = HashMap::new();
+    let mut ring_buffer = SlotRingBuffer::new(500);
 
     loop {
         let (len, peer) = socket.recv_from(&mut buf).await?;
@@ -78,6 +80,15 @@ async fn main() -> anyhow::Result<()> {
                         batch.slot,
                         batch.fec_set_index
                     );
+                    let slot_data = SlotData {
+                        slot: batch.slot,
+                        parent_slot: 0,
+                        entries: vec![],
+                        num_transactions: 0,
+                        merkle_root: None,
+                    };
+                    ring_buffer.put(slot_data);
+                    println!("stored slot{} in ring buffer", batch.slot);
                     batches.remove(&batch_id);
                 }
             }
