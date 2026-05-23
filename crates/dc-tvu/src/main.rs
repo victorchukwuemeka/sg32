@@ -3,6 +3,7 @@ use dc_tvu::shred_header::*;
 use tokio::net::UdpSocket;
 
 use dc_tvu::fec_batch::FecBatch;
+use dc_tvu::flat_file_store::FlatFileStore;
 use dc_tvu::reed_solomon::{NUM_CODE_SHREDS, NUM_DATA_SHREDS};
 use dc_tvu::ring_buffer::{SlotData, SlotRingBuffer};
 use std::collections::HashMap;
@@ -17,6 +18,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut batches: HashMap<ErasureSetId, FecBatch> = HashMap::new();
     let mut ring_buffer = SlotRingBuffer::new(500);
+    let mut file_store = FlatFileStore::new("data".into())?;
 
     loop {
         let (len, peer) = socket.recv_from(&mut buf).await?;
@@ -80,15 +82,21 @@ async fn main() -> anyhow::Result<()> {
                         batch.slot,
                         batch.fec_set_index
                     );
+                    let all_entries = recovered.concat();
+                    let count = recovered.len();
+                    println!("deshredded {} entries ({} bytes)", count, all_entries.len());
+
                     let slot_data = SlotData {
                         slot: batch.slot,
                         parent_slot: 0,
-                        entries: vec![],
-                        num_transactions: 0,
+                        entries: all_entries.clone(),
+                        num_transactions: count,
                         merkle_root: None,
                     };
                     ring_buffer.put(slot_data);
-                    println!("stored slot{} in ring buffer", batch.slot);
+                    println!("stored slot {} in ring buffer", batch.slot);
+                    let _ = file_store.save_slot(batch.slot, &all_entries);
+                    println!("saved slot {} to disk", batch.slot);
                     batches.remove(&batch_id);
                 }
             }

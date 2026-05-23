@@ -36,13 +36,18 @@ via channels.
                     │  RECOVERER   │◄─── recover ─┤  RECOVERY    │
                     │  (thread 2)  │              │  QUEUE       │
                     │  RS decode   │              │              │
-                    └──────┬───────┘              └──────────────┘
-                           │ recovered shreds
+                    │  +           │              └──────────────┘
+                    │  DESHREDDER  │
+                    │  (same thread│
+                    │   to avoid   │
+                    │   extra copy)│
+                    └──────┬───────┘
+                           │ entries (Vec<Transaction>)
                            ▼
                     ┌──────────────┐
-                    │  RING BUFFER │  ← hot storage, 500 slots in memory
+                    │  RING BUFFER │  ← assembled slot data, ready to prove
                     └──────┬───────┘
-                           │ slot complete
+                           │ slot with entries
                            ▼
                     ┌──────────────┐
                     │  MERKLE      │  ← build Merkle tree over slot's txs
@@ -53,7 +58,7 @@ via channels.
                            ▼
               ┌────────────────────────┐
               │  FLAT FILE STORE       │  ← cold storage, append-only
-              │  /data/slot_1000.dat   │     evicted from ring buffer
+              │  /data/slot_1000.dat   │     entries saved here
               │  /data/slot_1000.proof │
               └────────────────────────┘
                            │
@@ -155,7 +160,100 @@ No locks needed because:
 
 ---
 
-## 4. Thread Model
+## 4. Deshredder (Shreds → Entries)
+
+### 4.1 The Problem
+
+Recovered shreds are raw byte chunks, each ~1203 bytes, split across 32 data
+shreds per FEC batch, across multiple batches per slot. Nobody can read them
+like this. The deshredder puts the pieces back together.
+
+### 4.2 What It Does
+
+```
+One slot has 3 FEC batches, each with up to 32 data shreds:
+
+Data shreds (sorted by index):
+  [index 0]     bytes 0-962      ← batch 0
+  [index 1]     bytes 963-1925   ← batch 0
+  ...
+  [index 32]    bytes ...        ← batch 1
+  [index 33]    bytes ...
+  ...
+  [index N]     last bytes
+
+Deshredder:
+  1. Collect ALL data shreds for the slot from all FEC batches
+  2. Sort by shred index (ascending)
+  3. For each shred: strip headers (88 bytes), strip Merkle proof footer
+  4. Concatenate remaining payload bytes in order
+  5. Trim trailing zeros (padding from incomplete FEC batches)
+  6. Deserialize the byte blob as Vec<Entry>
+  7. Each Entry is a batch of transactions
+```
+
+### 4.3 Visual
+
+```
+Shred 0:  [sig|hdr|←───── 963 bytes of entry data ──────→|Merkle|proof]
+Shred 1:  [sig|hdr|←───── 963 bytes of entry data ──────→|Merkle|proof]
+Shred 2:  [sig|hdr|←───── 963 bytes of entry data ──────→|Merkle|proof]
+  ...
+                                                              │
+                                                   strip sig+headers+proof
+                                                              │
+                                                              ▼
+                                ┌────────────────────────────────┐
+                                │   Concatenated entry bytes     │
+                                │   (triangle: sorted by index)  │
+                                └───────────────┬────────────────┘
+                                                │ bincode::deserialize
+                                                ▼
+                                ┌────────────────────────────────┐
+                                │        Vec<Entry>              │
+                                │   Entry { txs: [Tx, Tx, ...] } │
+                                │   Entry { txs: [Tx, Tx, ...] } │
+                                │   Entry { txs: [Tx, Tx, ...] } │
+                                └────────────────────────────────┘
+```
+
+### 4.4 Where It Runs
+
+The deshredder runs in the **Recoverer thread** (Thread 2). After RS recovery
+is done and all shreds for a batch are present, we immediately deshred the
+slot. This avoids copying the shred bytes to another thread just for reassembly.
+
+Once deshredded, the Vec<Entry> goes into the ring buffer as SlotData.entries.
+From there, the Merkle prover can build proofs over individual transactions.
+
+### 4.5 Code Sketch
+
+```rust
+fn deshred(shreds: &[Shred]) -> Option<Vec<Entry>> {
+    let mut data_shreds: Vec<&Shred> = shreds.iter()
+        .filter(|s| s.shred_type() == ShredType::Data)
+        .collect();
+    data_shreds.sort_by_key(|s| s.index());
+
+    let mut all_data = Vec::new();
+    for shred in &data_shreds {
+        // strip 88 bytes of headers, strip Merkle proof, keep only data
+        let payload = shred.data_payload()?;
+        all_data.extend_from_slice(payload);
+    }
+
+    // Trim padding zeros from incomplete last FEC batch
+    while all_data.last() == Some(&0) {
+        all_data.pop();
+    }
+
+    bincode::deserialize::<Vec<Entry>>(&all_data).ok()
+}
+```
+
+---
+
+## 5. Thread Model
 
 ### Thread 1: Ingester
 ```
@@ -217,14 +315,59 @@ Proof generation is a single tree walk: `O(log N)` SHA-256 hashes. ~5µs.
 
 ---
 
-## 5. Flat File Store
+## 7. Flat File Store (Cold Storage)
 
-### Format
+### 7.1 Why Do We Need It?
+
+The ring buffer holds 500 slots in RAM. Solana produces one block every 400ms.
+That's 2.5 blocks per second. After 500 / 2.5 = 200 seconds (~3 minutes), the
+oldest slot gets evicted from the ring buffer.
+
+If a bot asks for a proof from slot 100 and we already evicted it, what do we
+say? "Sorry, I had it 3 minutes ago but forgot it"? That's unacceptable.
+
+The flat file store is the **permanent memory** — disk-backed, indexed by slot,
+never loses data. It's slower than RAM (~100µs seek vs ~1µs RAM lookup) but
+has unlimited capacity. Together with the ring buffer, we get:
+
+| | Ring Buffer | Flat File Store |
+|---|---|---|
+| Speed | ~1µs lookup | ~100-500µs lookup |
+| Capacity | 500 slots (limited by RAM) | Unlimited (limited by disk) |
+| Persistence | Lost on restart | Survives restart |
+| Best for | Recent slots (last 3 min) | All historical slots |
+
+### 7.2 When Data Moves to Disk
+
+```
+                    slot arrives
+                         │
+                         ▼
+               ┌─────────────────┐
+               │  Ring Buffer    │  ← hot, fast, in RAM
+               │  (500 slots)    │
+               └────────┬────────┘
+                        │ ring buffer full → evict oldest slot
+                        ▼
+               ┌─────────────────┐
+               │  Flat File      │  ← cold, permanent, on disk
+               │  /data/         │
+               └─────────────────┘
+                        │
+                        ▼
+               Served to bots via RPC
+               (proxy to our node asking for proof)
+```
+
+The key: a bot never sees a "not found" error as long as the flat file exists.
+If the slot is in RAM → instant. If on disk → fast. Always available.
+
+### 7.3 How Data Is Organized on Disk
 
 ```
 /data/
   slot_0000001000.dat      ← binary: bincode serialized Vec<Entry>
-  slot_0000001000.proof    ← binary: Merkle tree (all nodes, ready to serve proofs)
+  slot_0000001000.proof    ← binary: Merkle tree nodes, ready to serve proofs
   slot_0000001000.meta     ← JSON: { slot, parent_slot, block_time, num_txs }
   slot_0000001001.dat
   slot_0000001001.proof
@@ -232,20 +375,33 @@ Proof generation is a single tree walk: `O(log N)` SHA-256 hashes. ~5µs.
   ...
 ```
 
-`.dat` files are written once when the slot is evicted from the ring buffer.
-`.proof` files are written after the Merkle tree is built.
-`.meta` files are small JSON objects for fast filtering without deserializing the
-full block.
+Each slot is 3 files (data, proof, metadata). Files are written once, never
+modified — append-only semantics for the directory level.
 
-### Index
+### 7.4 In-Memory Index
 
-An in-memory `BTreeMap<Slot, (file_offset, file_path)>` tracks which files exist.
-Loaded at startup from a directory scan. O(log N) lookup, negligible memory
-(~24 bytes per slot).
+We keep a lightweight in-memory index of what's on disk:
+
+```rust
+struct FlatFileIndex {
+    by_slot: BTreeMap<Slot, SlotFileInfo>,
+    data_dir: PathBuf,
+}
+
+struct SlotFileInfo {
+    data_path: PathBuf,
+    data_size: u64,
+    proof_path: Option<PathBuf>,  // None until proof is generated
+    meta: SlotMeta,
+}
+```
+
+Loaded by scanning `/data/` at startup. `BTreeMap<Slot, ...>` takes ~24 bytes
+per slot — 1 million slots would use ~24 MB RAM for the index (negligible).
 
 ---
 
-## 6. Bottleneck Analysis
+## 8. Bottleneck Analysis
 
 | Stage | Latency | Throughput | Bottleneck? |
 |-------|---------|-----------|-------------|
@@ -263,7 +419,7 @@ second (each needing recovery). Fixes:
 
 ---
 
-## 7. Starting Up
+## 9. Starting Up
 
 On cold start:
 1. Scan `/data/` for existing `.dat` files
@@ -276,7 +432,7 @@ empty and fills as new slots arrive. Old slots are always available from disk.
 
 ---
 
-## 8. Design Principles
+## 10. Design Principles
 
 1. **No locks in hot path** — atomic writes + immutability after write
 2. **Newer data > older data** — drop old shreds before dropping new ones
