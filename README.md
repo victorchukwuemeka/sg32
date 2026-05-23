@@ -15,15 +15,9 @@ Every protocol module is real — same wire formats, same data structures as Aga
 | Module | Status | What it implements |
 |---|---|---|---|
 | `dc-gossip` | Working | CRDS table, peer discovery, cluster info table — connects to devnet, discovers 50+ peers, shows versions and ports |
-| `dc-tvu` | Building | Full pipeline: shred receiver → RS recovery → deshredder → ring buffer → flat file store. Ledger + prover live here for now; will split into separate crates when stable |
-| `dc-rpc` | Planned | RPC server serving block data + proofs for bots and onchain products |
-| `dc-tpu` | Planned | Transaction forwarding to leader via QUIC |
-| `dc-poh` | Planned | Proof of History hash chain verifier |
-| `dc-consensus` | Planned | Tower BFT simulator — votes, forks, lockouts |
-| `dc-runtime` | Planned | Sealevel-lite parallel transaction execution |
-| `dc-cli` | Planned | CLI tools for every module |
+| `dc-tvu` | Building | Full pipeline: shred receiver → RS recovery → deshredder → ring buffer → flat file store → Merkle prover. Everything below RPC lives here; will split into separate crates when stable |
 
-Build order follows the data flow: you can't serve blocks (RPC) without storing them (Ledger). You can't store them without receiving them (TVU). You can't receive them without knowing who to listen to (Gossip).
+Build order: you can't serve proofs (RPC) without building Merkle trees. You can't build trees without storing entries (ledger). You can't store them without receiving and recovering shreds (TVU). You can't receive them without knowing who to listen to (gossip).
 
 ---
 
