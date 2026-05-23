@@ -13,11 +13,9 @@ Every protocol module is real — same wire formats, same data structures as Aga
 ## What's inside
 
 | Module | Status | What it implements |
-|---|---|---|
+|---|---|---|---|
 | `dc-gossip` | Working | CRDS table, peer discovery, cluster info table — connects to devnet, discovers 50+ peers, shows versions and ports |
-| `dc-tvu` | Building | Shred receiver, erasure reconstruction, block assembly — gets raw blocks off the wire |
-| `dc-ledger` | Planned | Block storage, account state, ledger indexing — where assembled blocks live |
-| `dc-prover` | Planned | Merkle inclusion proofs + ZK proofs over transaction sets — verify tx inclusion without trust |
+| `dc-tvu` | Building | Full pipeline: shred receiver → RS recovery → deshredder → ring buffer → flat file store. Ledger + prover live here for now; will split into separate crates when stable |
 | `dc-rpc` | Planned | RPC server serving block data + proofs for bots and onchain products |
 | `dc-tpu` | Planned | Transaction forwarding to leader via QUIC |
 | `dc-poh` | Planned | Proof of History hash chain verifier |
@@ -66,13 +64,16 @@ This enables:
 ## Data Flow
 
 ```
-Gossip ──► TVU ──► Ledger ──► Prover ──► RPC ──► Bots / Bridges / Light Clients
-  │          │         │          │         │
-  │    knows who     stores     builds    serves blocks
-  │    to listen     blocks     proofs    + proofs
-  │    to from                over txs
-  ▼    gossip                                         
-peer list                                              
+Gossip ──► TVU ────────────────► RPC ──► Bots / Bridges / Light Clients
+  │          │                       │
+  │    knows who          serves blocks
+  │    to listen          + proofs
+  │    to from                 
+  ▼    gossip                  
+peer list
+
+TVU (internal pipeline):
+  ShredFetch → RS Recover → Deshredder → Ring Buffer → Flat File Store → Merkle Prover                                              
 ```
 
 Each module is a pipeline stage. Data moves forward. You can't skip a stage.
@@ -97,13 +98,21 @@ crates/
       transport.rs      UDP socket wrapper
     GOSSIP_DETAILS.md   complete debugging write-up
 
-  dc-tvu/            # Building - shred receiver, block reassembly
-    TVU_DESIGN.md      full pipeline design doc
+  dc-tvu/            # Building - full pipeline (shreds → storage → proofs)
+    src/
+      main.rs           UDP receiver, wires everything
+      shred.rs          Shred enum, parse_from_bytes
+      shred_header.rs   header structs, wire helpers, constants
+      gf256.rs          GF(2^8) arithmetic for Reed-Solomon
+      reed_solomon.rs   Cauchy RS encoder/decoder, matrix inversion
+      fec_batch.rs      FEC batch tracker, triggers recovery
+      deshredder.rs     reassemble shredded data → entries
+      ring_buffer.rs    in-memory slot cache (hot storage)
+      flat_file_store.rs persistent disk storage (cold)
+    TVU_DESIGN.md      full protocol design doc
+    PIPELINE_DESIGN.md performance pipeline design
 
-  dc-ledger/         # Planned - block storage, indexing
-  dc-prover/         # Planned - Merkle + ZK proof generation
   dc-rpc/            # Planned - RPC server for bots
-  dc-tpu/            # Planned - transaction sender
   dc-poh/            # Planned - PoH verifier
   dc-consensus/      # Planned - Tower BFT
   dc-runtime/        # Planned - Sealevel executor
@@ -152,24 +161,19 @@ You should see validators discovered from Solana devnet within seconds, with a f
 - Cluster info table display
 - Full debugging write-up in GOSSIP_DETAILS.md
 
-### Phase 2 — TVU / Turbine (building now)
+### Phase 2 — TVU / Full Pipeline (building now, includes ledger + prover)
 - Bind to TVU port and receive raw shreds from the network
-- Parse data shreds and coding shreds
-- Implement Reed-Solomon erasure reconstruction
-- Reassemble shreds into full blocks
-- Extract the native Merkle proofs embedded in every shred chain
+- Parse data shreds and coding shreds (shred_header + shred modules)
+- Implement GF(2^8) arithmetic for Reed-Solomon (gf256 module)
+- Cauchy RS encoder/decoder with matrix inversion (reed_solomon module)
+- FEC batch tracking and automatic recovery trigger (fec_batch module)
+- Deshredder: reassemble raw shred bytes into entries (deshredder module)
+- Ring buffer: hot in-memory slot cache (ring_buffer module)
+- Flat file store: cold persistent disk storage (flat_file_store module)
+- Merkle tree builder over slot transactions (next up)
+- Ledger + prover built inside dc-tvu; will split into separate crates when stable
 
-### Phase 3 — Ledger
-- Block storage (append-only, indexed by slot)
-- Transaction indexing (tx hash -> slot, position)
-- Slot metadata store
-
-### Phase 4 — Merkle Inclusion Proofs
-- Build a Merkle tree over every transaction in a slot
-- Generate inclusion proofs: "tx X is in slot Y at position Z"
-- Enable trustless tx verification without running a full node
-
-### Phase 5 — ZK Proofs
+### Phase 3 — ZK Proofs
 - Build ZK circuits for transaction set verification
 - Generate succinct proofs that a set of transactions was included in a slot
 - Enable light clients, bridges, and coprocessors to verify Solana data with constant-size proofs
