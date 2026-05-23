@@ -13,7 +13,7 @@ Every protocol module is real — same wire formats, same data structures as Aga
 ## What's inside
 
 | Module | Status | What it implements |
-|---|---|---|---|
+|---|---|---|
 | `dc-gossip` | Working | CRDS table, peer discovery, cluster info table — connects to devnet, discovers 50+ peers, shows versions and ports |
 | `dc-tvu` | Building | Full pipeline: shred receiver → RS recovery → deshredder → ring buffer → flat file store → Merkle prover. Everything below RPC lives here; will split into separate crates when stable |
 
