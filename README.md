@@ -1,10 +1,8 @@
-# solana-protocol-gym
+# sg97 — Solana Guardian 97
 
-> A full-stack Solana protocol implementation in Rust — learn how the validator works by building one, then ship an RPC that serves trustless proofs.
+> A ground-up Solana validator stack that serves trustless Merkle proofs over transaction data. For bridges, bots, and firms that need verified data without running a full node.
 
-This is not a dApp framework. It is not a wallet SDK. It is not another JSON-RPC wrapper.
-
-**solana-protocol-gym** is a ground-up implementation of the Solana validator stack — gossip, TVU, TPU, PoH, Tower BFT, Sealevel, RPC, and a **proof generation layer** (Merkle inclusion + ZK) — written in Rust, modular by design.
+**sg97** is a real implementation of the Solana protocol — gossip, shred recovery, Reed-Solomon decode, deshredder, Merkle prover — in Rust. Not a fork of Agave. Built from the wire up to serve one thing: **provably correct Solana block data**.
 
 Every protocol module is real — same wire formats, same data structures as Agave — but written to be understood, not just to run in production. The endgame is a high-performance RPC node that serves block data with **cryptographic proofs of inclusion**, something Solana's native RPC doesn't provide.
 
@@ -77,7 +75,7 @@ Each module is a pipeline stage. Data moves forward. You can't skip a stage.
 ## Architecture
 
 ```
-solana-protocol-gym/
+sg97/
 crates/
   dc-gossip/         # Working - CRDS, peer discovery, UDP sockets
     src/
@@ -126,8 +124,8 @@ docs/
 
 ### Clone
 ```bash
-git clone https://github.com/victorchukwuemeka/solana-protocol-gym.git
-cd solana-protocol-gym
+git clone https://github.com/victorchukwuemeka/sg97.git
+cd sg97
 ```
 
 ### Build
@@ -201,7 +199,7 @@ You should see validators discovered from Solana devnet within seconds, with a f
 
 ## Relation to Agave
 
-solana-protocol-gym is an independent implementation. It is not a fork of Agave.
+sg97 is an independent implementation. It is not a fork of Agave.
 
 Where Agave optimises for production performance and abstracts away wire-level details, this project exposes them. The goal is to make the protocol understandable by building it from scratch — then ship something useful with it.
 
