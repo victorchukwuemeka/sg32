@@ -3,6 +3,7 @@ docs/book/
 POPULARITY_STRATEGIES.md
 why_build_this.md
 session_o_cnow.md
+FUTURE.md
 
 # mdbook generated output
 *.html

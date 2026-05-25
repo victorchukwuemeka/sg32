@@ -5,15 +5,57 @@
 
 ---
 
+## 0. How Shreds Are Acquired
+
+We don't passively wait for shreds. We actively request them via the **repair protocol**:
+
+```
+[dc-gossip] discovers validators with their serve_repair + tvu ports
+       ↓ ContactInfo{serve_repair: IP:port4, tvu: IP:port10}
+[repair sender] constructs RepairProtocol::WindowIndex{
+       slot, shred_index,
+       header{nonce, sender=our_pubkey, recipient=validator_pubkey}
+       } signed with our keypair
+       ↓ UDP to validator's serve_repair port
+[validator] verifies signature, looks up shred in blockstore
+       ↓ response: [shred_bytes (1232)] + [nonce (8 bytes bincode)]
+[our UDP socket] strips last 8 bytes (nonce), feeds remainder to pipeline
+```
+
+### Repair Wire Format
+
+```
+RepairProtocol::WindowIndex {
+    header: RepairRequestHeader {
+        signature: Signature,    // 64 bytes, set to default then signed over
+        sender: Pubkey,          // 32 bytes — our node identity
+        recipient: Pubkey,       // 32 bytes — target validator pubkey
+        timestamp: u64,          // 8 bytes — unix timestamp
+        nonce: u64,              // 8 bytes — unique per request, dedup on response
+    },
+    slot: u64,                   // 8 bytes — slot we're requesting
+    shred_index: u64,            // 8 bytes — specific shred index in slot
+}
+```
+
+The response from the validator is simply:
+`[raw_shred_bytes] + [nonce (8 bytes bincode)]`
+
+We strip the nonce, and the remaining bytes are fed directly to `Shred::parse_from_bytes()`.
+
+---
+
 ## 1. The Problem
 
 Solana produces blocks every 400ms. Each block has thousands of shreds. Validators
 need to:
-1. Receive all shreds
-2. Recover lost ones via RS
-3. Reassemble into entries
-4. Generate Merkle proofs over transactions
-5. Serve proofs to bots/bridges/light clients
+1. Discover peers via gossip
+2. Request shreds via repair protocol
+3. Receive all shreds
+4. Recover lost ones via RS
+5. Reassemble into entries
+6. Generate Merkle proofs over transactions
+7. Serve proofs to bots/bridges/light clients
 
 If any step blocks the next, we drop packets and lose data. The solution is a
 **lock-free pipeline** where each stage runs on its own thread and communicates
@@ -24,11 +66,24 @@ via channels.
 ## 2. The Pipeline
 
 ```
+┌──────────────┐
+│  dc-gossip   │  discovers validators, maintains peer table
+│  0.0.0.0:8000│
+└──────┬───────┘
+       │ ContactInfo route: peer.serve_repair, peer.tvu, peer.gossip
+       ▼
+┌──────────────────┐
+│  REPAIR SENDER   │  builds + signs RepairProtocol, sends to serve_repair
+│  (ingester thread)│  UDP [4b enum_tag][signature][sender][recipient][ts][nonce][slot][shred_index]
+└────────┬─────────┘
+         │ response: [shred bytes] + [nonce (8 bytes)]
+         ▼
                     ┌──────────────┐
    UDP ────────────►│  INGESTER    │─── shreds ──►┌──────────────┐
-   socket           │  (thread 1)  │              │  FEC BATCH   │
-                    │  parse +     │              │  TRACKER     │
-                    │  classify    │              │  (in-memory) │
+   repair_rsp       │  (thread 1)  │              │  FEC BATCH   │
+                    │  strip nonce │              │  TRACKER     │
+                    │  parse +     │              │  (in-memory) │
+                    │  classify    │              │              │
                     └──────────────┘              └──────┬───────┘
                                                          │ batch complete
                                                          ▼
@@ -253,24 +308,103 @@ fn deshred(shreds: &[Shred]) -> Option<Vec<Entry>> {
 
 ---
 
-## 5. Thread Model
+## 5. Merkle Prover
+
+### 5.1 What Is a Merkle Tree?
+
+A binary tree where every leaf is a SHA-256 hash of one piece of data (a transaction),
+and every parent is the hash of its two children concatenated.
+
+```
+        root = H(H12 + H34)
+       /                    \
+   H12 = H(H1 + H2)     H34 = H(H3 + H4)
+    /        \            /        \
+  H1=H(tx1) H2=H(tx2)  H3=H(tx3) H4=H(tx4)
+```
+
+The root is a single 32-byte hash that represents the entire set of transactions.
+
+### 5.2 Why Do We Need It?
+
+Without Merkle: a bot asking "was tx1 in slot 1000?" must either trust our node
+or download all 1000 transactions to verify.
+
+With Merkle: we answer "yes — here's a short proof. Verify it yourself."
+The proof is just ~5 hashes (for 1000 leaves, log2(1000) ≈ 10, but we store
+the path). The bot verifies in microseconds. No trust, no massive download.
+
+### 5.3 How a Proof Works
+
+To prove tx1 is in the tree above:
+
+1. We give the bot: `leaf_hash = H(tx1)`, `proof = [H2, H34]` (sibling hashes
+   along the path from leaf to root)
+2. Bot computes: `H12 = H(leaf_hash + H2)`, then `root' = H(H12 + H34)`
+3. If `root' == root`, tx1 was definitely in the tree. No other transaction
+   could produce the same root — hash collisions are cryptographically infeasible.
+
+The `prove(tx_index)` method returns the sibling path. The `verify()` method
+walks from leaf to root hashing at each step.
+
+### 5.4 Where It Runs
+
+On a dedicated thread (Thread 3 in the thread model). Once a slot is fully
+deshredded and stored in the ring buffer, we build the Merkle tree. Building
+takes ~1-2ms for 1000 transactions. Proof generation is `O(log N)` and happens
+on demand when a client asks.
+
+The tree is stored as `Arc<MerkleTree>` in `SlotData.merkle_tree`. Multiple
+clients can request proofs concurrently from the same tree — the tree is
+immutable after construction, so no locks needed.
+
+---
+
+## 6. Thread Model
+
+### Thread 0: Gossip + Peer Discovery
+```
+Loop:
+  ping/pong with entrypoint to join gossip
+  send PullRequest every 5s → receive PushResponses with ContactInfos
+  maintain CRDS table: prune old entries every 30s
+  on each discovery cycle:
+    emit peer list (pubkey, gossip, tvu, serve_repair, shred_version)
+    → shared channel consumed by repair sender
+```
 
 ### Thread 1: Ingester
 ```
 Loop:
-  recv_from(socket)        ← blocking recv, but tokio's async handles it
-  if len < 89: skip        ← too short to be a valid shred
-  parse shred_variant      ← one byte read, instant
-  get slot, index, fec     ← byte offset reads
+  // For every known peer, every ~1s:
+  for peer in discovered_peers:
+    if peer has recent slot data we don't have:
+      nonce = rand()
+      request = RepairProtocol::WindowIndex { header{nonce, us, peer}, slot, shred_index }
+      bytes = serialize(request) + sign(serialized request with our keypair)
+      send UDP to peer.serve_repair
+
+  // Receive responses on same socket:
+  recv_from(socket)
+  if bytes.len() > SIZE_OF_NONCE (8):
+    nonce_bytes = bytes[bytes.len()-8..]
+    shred_bytes = bytes[..bytes.len()-8]
+  if len < 89: skip
+  parse shred_variant
+  get slot, index, fec
   route to FEC batch:
-    Data:   batch.add_data_shred(data_index, bytes)
-    Code:   batch.add_code_shred(code_position, bytes)
+    Data:   batch.add_data_shred(data_index, shred_bytes)
+    Code:   batch.add_code_shred(code_position, shred_bytes)
   if batch.received_count() >= num_data:
-    send batch to RecoveryQueue  ← channel send, non-blocking
+    send batch to RecoveryQueue
 ```
 
 Max throughput: bounded by UDP receive speed. On Linux with SO_REUSEPORT,
 you can spawn multiple ingester threads each on their own socket.
+
+Repair requests are rate-limited: one request per peer per ~100ms to avoid
+being throttled. The nonce in each request prevents duplicate responses
+from being processed.
 
 ### Thread 2: Recoverer
 ```
@@ -422,13 +556,16 @@ second (each needing recovery). Fixes:
 ## 9. Starting Up
 
 On cold start:
-1. Scan `/data/` for existing `.dat` files
-2. Build in-memory index of all known slots
-3. Start listening on UDP (all new slots go into ring buffer)
-4. If someone asks for an old slot, load from flat file
+1. Start dc-gossip to join devnet and discover validators (port 8000)
+2. Wait until at least one validator is discovered in CRDS table
+3. Open UDP socket for repair responses (port 8003)
+4. For each discovered validator, send repair requests for recent slots
+5. Ingest responses → FEC batches → recovery → deshred → ring buffer
+6. If someone asks for an old slot, load from flat file
+7. Periodically re-query gossip for fresh ContactInfos
 
 This means the node can restart without losing data. The ring buffer starts
-empty and fills as new slots arrive. Old slots are always available from disk.
+empty and fills as repair responses arrive. Old slots are always available from disk.
 
 ---
 
