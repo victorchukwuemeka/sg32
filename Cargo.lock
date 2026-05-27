@@ -725,6 +725,7 @@ dependencies = [
  "solana-serde-varint 3.0.1",
  "solana-short-vec",
  "solana-version",
+ "solana-vote-interface",
  "thiserror",
  "tokio",
  "tracing",

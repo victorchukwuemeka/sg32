@@ -29,6 +29,13 @@ impl Handler {
             Protocol::PushMessage(_, values) | Protocol::PullResponse(_, values) => {
                 for value in values {
                     let pk = value.pubkey();
+                    let data_type = std::mem::discriminant(&value.data);
+                    let vote_slot = if let crate::crds_data::CrdsData::Vote(_, v) = &value.data {
+                        Some(v.slot)
+                    } else { None };
+                    if vote_slot.is_some() {
+                        eprintln!("[HANDLER] received Vote with slot={:?}", vote_slot);
+                    }
                     if table.merge(value) {
                         tracing::info!("new/updated entry from {pk}");
                     }

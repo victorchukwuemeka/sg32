@@ -313,15 +313,27 @@ impl ShredFlags {
 //   77      2     version        Cluster identifier (e.g. 11016 for devnet)
 //   79      4     fec_set_index  Index of 1st data shred in this FEC batch
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct ShredCommonHeader {
-    #[serde(with = "serde_bytes")]
     pub signature: [u8; 64], // offset 0
     pub shred_variant: u8,  // offset 64
     pub slot: u64,          // offset 65
     pub index: u32,         // offset 73
     pub version: u16,       // offset 77
     pub fec_set_index: u32, // offset 79
+}
+
+impl ShredCommonHeader {
+    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        Some(Self {
+            signature: read_arr::<64>(bytes, 0)?,
+            shred_variant: *bytes.get(64)?,
+            slot: u64::from_le_bytes(bytes.get(65..73)?.try_into().ok()?),
+            index: u32::from_le_bytes(bytes.get(73..77)?.try_into().ok()?),
+            version: u16::from_le_bytes(bytes.get(77..79)?.try_into().ok()?),
+            fec_set_index: u32::from_le_bytes(bytes.get(79..83)?.try_into().ok()?),
+        })
+    }
 }
 
 // ── Data Header ──────────────────────────────────────────────────────────────
@@ -453,6 +465,14 @@ pub fn get_num_coding_shreds(bytes: &[u8]) -> Option<u16> {
 pub fn get_coding_position(bytes: &[u8]) -> Option<u16> {
     let slice = bytes.get(87..89)?;
     Some(u16::from_le_bytes(slice.try_into().ok()?))
+}
+
+// ── read_arr helper ──────────────────────────────────────────────────────────
+pub fn read_arr<const N: usize>(bytes: &[u8], offset: usize) -> Option<[u8; N]> {
+    let slice = bytes.get(offset..offset + N)?;
+    let mut arr = [0u8; N];
+    arr.copy_from_slice(slice);
+    Some(arr)
 }
 
 // ── ShredId ──────────────────────────────────────────────────────────────────

@@ -26,8 +26,7 @@ impl Shred {
             ShredVariant::MerkleData { proof_size, .. } => proof_size as usize,
             ShredVariant::MerkleCode { proof_size, .. } => proof_size as usize,
         };
-        let common_header: ShredCommonHeader =
-            bincode::deserialize(bytes.get(..SIZE_OF_COMMON_HEADER)?).ok()?;
+        let common_header = ShredCommonHeader::from_bytes(bytes)?;
         match variant {
             ShredVariant::MerkleData { .. } => {
                 let data_header: DataShredHeader = bincode::deserialize(
@@ -112,10 +111,4 @@ impl Shred {
         }
     }
 
-}
-fn read_arr<const N: usize>(bytes: &[u8], offset: usize) -> Option<[u8; N]> {
-    let slice = bytes.get(offset..offset + N)?;
-    let mut arr = [0u8; N];
-    arr.copy_from_slice(slice);
-    Some(arr)
 }

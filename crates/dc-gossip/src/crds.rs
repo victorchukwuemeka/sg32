@@ -6,6 +6,7 @@ use solana_sdk::pubkey::Pubkey;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::time::{SystemTime, UNIX_EPOCH};
+use solana_sdk::clock::Slot;
 
 fn now() -> u64 {
     SystemTime::now()
@@ -67,6 +68,20 @@ impl CrdsTable {
                 _ => None,
             })
             .collect()
+    }
+
+    /// Return the highest slot seen across all votes and restart records.
+    pub fn get_highest_slot(&self) -> Option<solana_sdk::clock::Slot> {
+        let result = self.entries.values().filter_map(|value| match &value.data {
+            CrdsData::Vote(_, vote) => vote.slot,
+            CrdsData::RestartLastVotedForkSlots(s) => Some(s.last_voted_slot),
+            CrdsData::RestartHeaviestFork(f) => Some(f.last_slot),
+            _ => None,
+        }).max();
+        let vote_count = self.entries.values().filter(|v| matches!(&v.data, CrdsData::Vote(_, _))).count();
+        let total = self.entries.len();
+        eprintln!("[CRDS] get_highest_slot() = {:?} (votes={}, total={})", result, vote_count, total);
+        result
     }
 
     pub fn drain_events(&mut self) -> Vec<GossipEvent> {

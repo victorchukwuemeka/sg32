@@ -23,6 +23,8 @@ use pull_request::create_pull_request_message;
 use solana_sdk::timing::timestamp;
 use std::collections::HashSet;
 use std::net::SocketAddr;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::net::lookup_host;
 use tokio::sync::mpsc;
@@ -31,8 +33,12 @@ use transport::Transport;
 const DEVNET_ENTRYPOINT: &str = "entrypoint.devnet.solana.com:8001";
 const DEVNET_SHRED_VERSION: u16 = 11016;
 /// Run the gossip loop in the background, sending every discovered
-/// ContactInfo through the channel.
-pub async fn run_gossip_loop(tx: mpsc::Sender<ContactInfo>) -> Result<()> {
+/// ContactInfo through the channel and updating latest_slot with the
+/// highest voted slot from the CRDS table.
+pub async fn run_gossip_loop(
+    tx: mpsc::Sender<ContactInfo>,
+    latest_slot: Arc<AtomicU64>,
+) -> Result<()> {
     let node = NodeKeypair::new();
     tracing::info!("Gossip identity: {}", node.pubkey());
     let entrypoint = lookup_host(DEVNET_ENTRYPOINT)
@@ -103,6 +109,9 @@ pub async fn run_gossip_loop(tx: mpsc::Sender<ContactInfo>) -> Result<()> {
                 }
                 if last_prune.elapsed() >= Duration::from_secs(15) {
                     crds_table.prune();
+                    let slot = crds_table.get_highest_slot().unwrap_or(0);
+                    eprintln!("[GOSSIP] prune: {} entries, highest_slot={}", crds_table.len(), slot);
+                    latest_slot.store(slot, Ordering::Relaxed);
                     for (_, ci) in crds_table.all_contact_infos() {
                         // Send every discovered ContactInfo to the channel
                         let _ = tx.send(ci.clone()).await;

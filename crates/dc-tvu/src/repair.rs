@@ -1,5 +1,6 @@
 use anyhow::Result;
 use ed25519_dalek::{Signer, SigningKey};
+use sha2::{Digest, Sha256};
 use std::net::SocketAddr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::net::UdpSocket;
@@ -17,6 +18,13 @@ const ENUM_TAG_WINDOW_INDEX: u32 = 8;
 
 ///our Ed25518 signature are always 64 bytes
 const SIG_BYTES: usize = 64;
+
+const PING_BYTES: usize = 4 + 32 + 32 + 64;
+
+pub enum Response {
+    Shred { bytes: Vec<u8>, nonce: u32 },
+    Ping { token: [u8; 32], pubkey: [u8; 32] },
+}
 
 /// Build a signed RepairProtocol::WindowIndex and fire it off.
 pub async fn send_repair_request(
@@ -79,4 +87,38 @@ pub fn parse_repair_response(packet: &[u8]) -> Option<(&[u8], u32)> {
     let (shred_bytes, nonce_bytes) = packet.split_at(packet.len() - 4);
     let nonce = u32::from_le_bytes(nonce_bytes.try_into().ok()?);
     Some((shred_bytes, nonce))
+}
+
+pub fn parse_response(packet: &[u8]) -> Option<Response> {
+    if packet.len() == PING_BYTES && packet[..4] == [0, 0, 0, 0] {
+        let mut pubkey = [0u8; 32];
+        pubkey.copy_from_slice(&packet[4..36]);
+        let mut token = [0u8; 32];
+        token.copy_from_slice(&packet[36..68]);
+        return Some(Response::Ping { token, pubkey });
+    }
+    if packet.len() < 5 {
+        return None;
+    }
+    let (shred_bytes, nonce_bytes) = packet.split_at(packet.len() - 4);
+    let nonce = u32::from_le_bytes(nonce_bytes.try_into().ok()?);
+    Some(Response::Shred {
+        bytes: shred_bytes.to_vec(),
+        nonce,
+    })
+}
+
+pub fn build_pong(token: &[u8; 32], our_key: &SigningKey) -> Vec<u8> {
+    let hash = Sha256::new()
+        .chain_update(b"SOLANA_PING_PONG")
+        .chain_update(token)
+        .finalize();
+
+    let mut buf = Vec::with_capacity(PING_BYTES);
+    buf.extend_from_slice(&7u32.to_le_bytes());          // enum tag for Pong
+    buf.extend_from_slice(&our_key.verifying_key().to_bytes());  // our pubkey
+    buf.extend_from_slice(&hash);                        // SHA256 hash
+    let sig = our_key.sign(&hash);                       // sign the hash
+    buf.extend_from_slice(&sig.to_bytes());              // signature
+    buf
 }

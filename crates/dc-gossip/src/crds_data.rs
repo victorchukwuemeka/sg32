@@ -147,12 +147,70 @@ pub struct AccountsHashes {
 
 type VoteIndex = u8;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug)]
 pub struct Vote {
     pub from: Pubkey,
     transaction: Transaction,
     pub wallclock: u64,
-    slot: Option<Slot>,
+    #[serde(skip_serializing)]
+    pub slot: Option<Slot>,
+}
+
+impl<'de> Deserialize<'de> for Vote {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use solana_vote_interface::instruction::VoteInstruction;
+
+        #[derive(Deserialize)]
+        struct VoteHelper {
+            from: Pubkey,
+            transaction: Transaction,
+            pub wallclock: u64,
+        }
+        let helper = VoteHelper::deserialize(deserializer)?;
+
+        // Parse the vote transaction to fill the cached slot field.
+        let slot = extract_slot_from_vote_tx(&helper.transaction);
+
+        Ok(Vote {
+            from: helper.from,
+            transaction: helper.transaction,
+            wallclock: helper.wallclock,
+            slot,
+        })
+    }
+}
+
+/// Parse a vote transaction and return the last voted slot.
+fn extract_slot_from_vote_tx(tx: &Transaction) -> Option<Slot> {
+    use solana_vote_interface::{instruction::VoteInstruction, program::check_id};
+
+    let message = tx.message();
+    let first_ix = message.instructions.first()?;
+    let program_id = message
+        .account_keys
+        .get(usize::from(first_ix.program_id_index))?;
+
+    if !check_id(program_id) {
+        return None;
+    }
+
+    let ix_data = &first_ix.data;
+    let vote_ix: VoteInstruction = bincode::deserialize(ix_data).ok()?;
+
+    match vote_ix {
+        VoteInstruction::Vote(v) | VoteInstruction::VoteSwitch(v, _) => v.last_voted_slot(),
+        VoteInstruction::UpdateVoteState(s)
+        | VoteInstruction::UpdateVoteStateSwitch(s, _)
+        | VoteInstruction::CompactUpdateVoteState(s)
+        | VoteInstruction::CompactUpdateVoteStateSwitch(s, _) => s.last_voted_slot(),
+        VoteInstruction::TowerSync(s) | VoteInstruction::TowerSyncSwitch(s, _) => {
+            s.last_voted_slot()
+        }
+        _ => None,
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

@@ -17,6 +17,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 bincode = { workspace = true }
 solana-sdk = "2.1"
+solana-vote-interface = "2.2"
 solana-bloom = "2.1"
 solana-hash = "2.1"
 bitvec = "1.0.1"
