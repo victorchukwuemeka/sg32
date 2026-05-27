@@ -55,11 +55,11 @@ async fn main() -> anyhow::Result<()> {
                     let slot = latest_slot.load(Ordering::Relaxed);
                     println!("-> Validator {:?} slot={} serve_repair={}",
                         &pk[..4], slot, addr);
-                    match send_repair_request(
-                        &socket, addr, &our_key, &pk, slot, 0,
-                    ).await {
-                        Ok(nonce) => println!("<- sent req (nonce={}) to {}", nonce, addr),
-                        Err(e) => eprintln!("repair failed: {e}"),
+                    for idx in 0..NUM_DATA_SHREDS as u64 {
+                        match send_repair_request(&socket, addr, &our_key, &pk, slot, idx).await {
+                            Ok(nonce) => println!("<- sent req (nonce={}, idx={}) to {}", nonce, idx, addr),
+                            Err(e) => eprintln!("repair failed (idx={}): {e}", idx),
+                        }
                     }
                 }
             }
@@ -76,11 +76,11 @@ async fn main() -> anyhow::Result<()> {
                             Ok(n) => println!("Pong sent ({} bytes) to {}", n, peer),
                             Err(e) => eprintln!("Pong send failed: {e}"),
                         }
-                        match send_repair_request(
-                            &socket, peer, &our_key, &pubkey, slot, 0,
-                        ).await {
-                            Ok(nonce) => println!("Re-sent req (nonce={}) to {}", nonce, peer),
-                            Err(e) => eprintln!("re-send failed: {e}"),
+                        for idx in 0..NUM_DATA_SHREDS as u64 {
+                            match send_repair_request(&socket, peer, &our_key, &pubkey, slot, idx).await {
+                                Ok(nonce) => println!("Re-sent req (nonce={}, idx={}) to {}", nonce, idx, peer),
+                                Err(e) => eprintln!("re-send failed (idx={}): {e}", idx),
+                            }
                         }
                     }
                     Some(Response::Shred { bytes, nonce }) => {
