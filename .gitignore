@@ -31,3 +31,6 @@ ledger.png
 404.html
 print.html
 toc.html
+
+# devnet slot data
+data/

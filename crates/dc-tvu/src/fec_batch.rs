@@ -3,6 +3,7 @@ use crate::reed_solomon;
 pub struct FecBatch {
     pub slot: u64,
     pub fec_set_index: u32,
+    pub parent_slot: u64,
     pub num_data: usize,
     pub num_code: usize,
     pub data_shreds: Vec<Option<Vec<u8>>>,
@@ -15,6 +16,7 @@ impl FecBatch {
         Self {
             slot,
             fec_set_index,
+            parent_slot: 0,
             num_data,
             num_code,
             data_shreds: vec![None; num_data],

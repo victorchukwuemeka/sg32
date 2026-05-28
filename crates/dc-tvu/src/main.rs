@@ -7,6 +7,7 @@ use rand::RngCore;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 
+use dc_tvu::deshredder;
 use dc_tvu::fec_batch::FecBatch;
 use dc_tvu::flat_file_store::FlatFileStore;
 use dc_tvu::merkle_prover::MerkleTree;
@@ -100,9 +101,12 @@ async fn main() -> anyhow::Result<()> {
                                     FecBatch::new(batch_id.slot, batch_id.fec_set_index, num_data, num_code)
                                 });
                                 match &shred {
-                                    Shred::MerkleData { common_header, data, .. } => {
+                                    Shred::MerkleData { common_header, data_header, data, .. } => {
                                         let data_index = common_header.index - common_header.fec_set_index;
                                         batch.add_data_shred(data_index, data.clone());
+                                        if batch.parent_slot == 0 {
+                                            batch.parent_slot = common_header.slot.saturating_sub(data_header.parent_offset as u64);
+                                        }
                                     }
                                     Shred::MerkleCode { coding_header, code, .. } => {
                                         batch.add_code_shred(coding_header.position.into(), code.clone());
@@ -116,16 +120,21 @@ async fn main() -> anyhow::Result<()> {
                                 );
                                 if let Some(recovered) = batch.try_recover() {
                                     println!("★★★ RECOVERED {} shreds! ★★★", recovered.len());
-                                    let all_entries = recovered.concat();
-                                    let tree = MerkleTree::new(&recovered);
-                                    let slot_data = SlotData {
-                                        slot: batch.slot, parent_slot: 0,
-                                        entries: all_entries.clone(),
-                                        num_transactions: recovered.len(),
-                                        merkle_root: Some(tree.root),
-                                    };
-                                    ring_buffer.put(slot_data);
-                                    let _ = file_store.save_slot(batch.slot, &all_entries);
+                                    if let Some(result) = deshredder::deshred_into_txs(&recovered) {
+                                        let tree = MerkleTree::new(&result.transactions);
+                                        let slot_data = SlotData {
+                                            slot: batch.slot,
+                                            parent_slot: batch.parent_slot,
+                                            entries: bincode::serialize(&result.entries).unwrap_or_default(),
+                                            num_transactions: result.transactions.len(),
+                                            merkle_root: Some(tree.root),
+                                        };
+                                        ring_buffer.put(slot_data);
+                                        let concat: Vec<u8> = recovered.concat();
+                                        let _ = file_store.save_slot(batch.slot, &concat);
+                                        println!("   → {} txs, root={:?}",
+                                            result.transactions.len(), &tree.root[..4]);
+                                    }
                                     batches.remove(&batch_id);
                                 }
                             }
