@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
+use crate::merkle_prover::MerkleTree;
+
 pub struct SlotData {
     pub slot: u64,
     pub parent_slot: u64,
     pub entries: Vec<u8>,
     pub num_transactions: usize,
     pub merkle_root: Option<[u8; 32]>,
+    pub merkle_tree: Option<Arc<MerkleTree>>,
 }
 
 pub struct SlotRingBuffer {
@@ -35,6 +38,14 @@ impl SlotRingBuffer {
         }
         if slot >= self.tail {
             self.tail = slot + 1;
+        }
+    }
+
+    pub fn latest_slot(&self) -> Option<u64> {
+        if self.tail == 0 {
+            None
+        } else {
+            Some(self.tail - 1)
         }
     }
 

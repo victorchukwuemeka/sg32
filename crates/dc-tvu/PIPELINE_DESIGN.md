@@ -61,73 +61,48 @@ If any step blocks the next, we drop packets and lose data. The solution is a
 **lock-free pipeline** where each stage runs on its own thread and communicates
 via channels.
 
+**Current status: v1 runs single-threaded** for simplicity. All stages run inside
+one `tokio::select!` loop. No channels, no queues, no thread coordination bugs.
+Multi-threaded optimization is deferred until we have real users and benchmarks
+proving it's the bottleneck.
+
 ---
 
-## 2. The Pipeline
+## 2. The Pipeline (Current — Single-Threaded)
 
 ```
 ┌──────────────┐
 │  dc-gossip   │  discovers validators, maintains peer table
-│  0.0.0.0:8000│
+│  0.0.0.0:8000│  (spawned as background tokio task)
 └──────┬───────┘
-       │ ContactInfo route: peer.serve_repair, peer.tvu, peer.gossip
+       │ ContactInfo via mpsc channel
        ▼
 ┌──────────────────┐
-│  REPAIR SENDER   │  builds + signs RepairProtocol, sends to serve_repair
-│  (ingester thread)│  UDP [4b enum_tag][signature][sender][recipient][ts][nonce][slot][shred_index]
-└────────┬─────────┘
-         │ response: [shred bytes] + [nonce (8 bytes)]
-         ▼
-                    ┌──────────────┐
-   UDP ────────────►│  INGESTER    │─── shreds ──►┌──────────────┐
-   repair_rsp       │  (thread 1)  │              │  FEC BATCH   │
-                    │  strip nonce │              │  TRACKER     │
-                    │  parse +     │              │  (in-memory) │
-                    │  classify    │              │              │
-                    └──────────────┘              └──────┬───────┘
-                                                         │ batch complete
-                                                         ▼
-                    ┌──────────────┐              ┌──────────────┐
-                    │  RECOVERER   │◄─── recover ─┤  RECOVERY    │
-                    │  (thread 2)  │              │  QUEUE       │
-                    │  RS decode   │              │              │
-                    │  +           │              └──────────────┘
-                    │  DESHREDDER  │
-                    │  (same thread│
-                    │   to avoid   │
-                    │   extra copy)│
-                    └──────┬───────┘
-                           │ entries (Vec<Transaction>)
-                           ▼
-                    ┌──────────────┐
-                    │  RING BUFFER │  ← assembled slot data, ready to prove
-                    └──────┬───────┘
-                           │ slot with entries
-                           ▼
-                    ┌──────────────┐
-                    │  MERKLE      │  ← build Merkle tree over slot's txs
-                    │  PROVER      │
-                    │  (thread 3)  │
-                    └──────┬───────┘
-                           │ slot + proof
-                           ▼
-              ┌────────────────────────┐
-              │  FLAT FILE STORE       │  ← cold storage, append-only
-              │  /data/slot_1000.dat   │     entries saved here
-              │  /data/slot_1000.proof │
-              └────────────────────────┘
-                           │
-                           ▼
-              ┌────────────────────────┐
-              │  RPC SERVER            │  ← serves proofs from memory or disk
-              │  (thread 4)            │
-              └────────────────────────┘
+│  MAIN LOOP       │  single tokio::select!:
+│  (single thread) │    - gossip peer arrives → send 32 repair requests
+│                  │    - UDP packet arrives → parse shred → route to FEC batch
+│                  │    - batch complete → RS recover → deshred → Merkle tree
+│                  │    - store in ring buffer + flat file
+│                  │    - every 10s: print status
+└──────────────────┘
+       │
+       ▼ (future: separate RPC thread)
+┌──────────────────┐
+│  RPC SERVER      │  serves proofs from ring buffer or flat file
+│  (planned)       │  JSON-RPC over HTTP
+└──────────────────┘
 ```
 
-Each arrow is a `tokio::sync::mpsc` channel. The receiver can't block the sender.
-If the receiver is slow, messages buffer in the channel (up to a limit), then
-the sender drops the oldest. This is intentional — newer shreds are more valuable
-than old ones.
+**Why single-threaded for v1:**
+- Zero coordination bugs — everything is sequential in one loop
+- No channel backpressure to tune or debug
+- RS decode (~1ms) and Merkle build (~2ms) are fast enough for devnet traffic
+- Threading can be added later when measured as a bottleneck
+
+**Future upgrade path:**
+1. RPC server starts on its own thread (first split — it's a TCP listener, different concern)
+2. Merkle building moves to a background thread (when slot throughput exceeds ~500/sec)
+3. RS recovery moves to a thread pool (when FEC batch rate exceeds ~1000/sec)
 
 ---
 
@@ -153,25 +128,32 @@ A ring buffer (fixed-size array, circular index) solves all three:
     evicted to disk                      writing now
 ```
 
-### 3.2 Structure
+### 3.2 Structure (Current — Simplified for v1)
 
 ```rust
 pub struct SlotRingBuffer {
     slots: Vec<Option<Arc<SlotData>>>,
-    capacity: usize,
-    head: AtomicU64,  // oldest slot
-    tail: AtomicU64,  // next slot to write
+    capacity: usize,       // 500
+    head: u64,             // oldest slot (plain u64, not atomic — single-threaded)
+    tail: u64,             // next slot to write
 }
 
 pub struct SlotData {
     pub slot: u64,
-    pub entries: Vec<Entry>,
-    pub merkle_root: [u8; 32],
-    pub merkle_tree: Option<Arc<MerkleTree>>,  // computed lazily
     pub parent_slot: u64,
+    pub entries: Vec<u8>,          // bincode-serialized entries
     pub num_transactions: usize,
-    pub block_time: Option<i64>,
+    pub merkle_root: Option<[u8; 32]>,
+    // NOTE: merkle_tree not stored — rebuilt from flat file on demand
+    // if slot is evicted from ring buffer. ~2ms rebuild for 1000 txs.
 }
+```
+
+**Deviation from ideal design:** No `merkle_tree: Option<Arc<MerkleTree>>` field.
+The tree is built inline when the slot is first processed, and the root is stored.
+If the slot gets evicted and later requested via RPC, the tree is rebuilt from
+the flat file. This saves memory and avoids complexity — at the cost of ~2ms
+rebuild time for cold slots.
 ```
 
 ### 3.3 Lookup
@@ -272,39 +254,51 @@ Shred 2:  [sig|hdr|←───── 963 bytes of entry data ──────
                                 └────────────────────────────────┘
 ```
 
-### 4.4 Where It Runs
+### 4.4 Entry Type
 
-The deshredder runs in the **Recoverer thread** (Thread 2). After RS recovery
-is done and all shreds for a batch are present, we immediately deshred the
-slot. This avoids copying the shred bytes to another thread just for reassembly.
-
-Once deshredded, the Vec<Entry> goes into the ring buffer as SlotData.entries.
-From there, the Merkle prover can build proofs over individual transactions.
-
-### 4.5 Code Sketch
+**Important:** `solana_sdk::entry::Entry` was removed in Solana SDK 2.x. We define
+our own `Entry` struct matching the bincode wire format:
 
 ```rust
-fn deshred(shreds: &[Shred]) -> Option<Vec<Entry>> {
-    let mut data_shreds: Vec<&Shred> = shreds.iter()
-        .filter(|s| s.shred_type() == ShredType::Data)
-        .collect();
-    data_shreds.sort_by_key(|s| s.index());
-
-    let mut all_data = Vec::new();
-    for shred in &data_shreds {
-        // strip 88 bytes of headers, strip Merkle proof, keep only data
-        let payload = shred.data_payload()?;
-        all_data.extend_from_slice(payload);
-    }
-
-    // Trim padding zeros from incomplete last FEC batch
-    while all_data.last() == Some(&0) {
-        all_data.pop();
-    }
-
-    bincode::deserialize::<Vec<Entry>>(&all_data).ok()
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct Entry {
+    pub num_hashes: u64,
+    pub hash: Hash,                                     // solana_sdk::hash::Hash
+    pub transactions: Vec<VersionedTransaction>,         // solana_transaction::versioned
 }
 ```
+
+The wire format is: `u64` (num_hashes) + `[u8; 32]` (hash) + `Vec<VersionedTransaction>`.
+No length prefix for the hash — it's a fixed 32-byte field.
+
+### 4.5 Where It Runs
+
+Currently runs **inline** in the main loop, right after RS recovery succeeds
+and before the slot data is stored. The deshredder output feeds directly into
+Merkle tree construction on the next line. No queue, no thread hop.
+
+### 4.6 Actual Code
+
+```rust
+// In main.rs recovery handler:
+if let Some(result) = deshredder::deshred_into_txs(&recovered) {
+    let tree = MerkleTree::new(&result.transactions);
+    let slot_data = SlotData {
+        slot: batch.slot,
+        parent_slot: batch.parent_slot,
+        entries: bincode::serialize(&result.entries).unwrap_or_default(),
+        num_transactions: result.transactions.len(),
+        merkle_root: Some(tree.root),
+    };
+    ring_buffer.put(slot_data);
+    file_store.save_slot(batch.slot, &recovered.concat());
+}
+```
+
+Deshredder takes `&[Vec<u8>]` (recovered shred payloads) and returns:
+- `entries: Vec<Entry>` — the parsed entries for re-serialization into SlotData
+- `transactions: Vec<Vec<u8>>` — each individual tx re-serialized, one per Merkle leaf
+
 
 ---
 
@@ -347,96 +341,89 @@ To prove tx1 is in the tree above:
 The `prove(tx_index)` method returns the sibling path. The `verify()` method
 walks from leaf to root hashing at each step.
 
-### 5.4 Where It Runs
+### 5.4 Where It Runs (Current)
 
-On a dedicated thread (Thread 3 in the thread model). Once a slot is fully
-deshredded and stored in the ring buffer, we build the Merkle tree. Building
-takes ~1-2ms for 1000 transactions. Proof generation is `O(log N)` and happens
-on demand when a client asks.
+Currently built **inline** in the main loop, immediately after deshredding.
+The tree is built eagerly (not lazily — not waiting for a client to ask).
 
-The tree is stored as `Arc<MerkleTree>` in `SlotData.merkle_tree`. Multiple
-clients can request proofs concurrently from the same tree — the tree is
-immutable after construction, so no locks needed.
+```rust
+let tree = MerkleTree::new(&result.transactions);
+// root extracted, tree discarded after SlotData is created
+```
+
+**Current behavior:**
+- Tree built immediately when the slot completes
+- Only `merkle_root` is stored in `SlotData` (not the full tree)
+- If a client later asks for a proof and the slot was evicted from ring buffer,
+  the tree is rebuilt from the flat file on demand (~2ms for 1000 txs)
+- This is the simplest possible approach: no caching, no LRU, no disk trees
+
+**Design doc ideal (future):**
+The tree stored as `Arc<MerkleTree>` in `SlotData.merkle_tree` on a dedicated
+Merkle thread. Multiple clients request proofs concurrently from the same tree
+— immutable after construction, no locks needed.
 
 ---
 
-## 6. Thread Model
+## 6. Thread Model (Current — Single-Threaded)
 
-### Thread 0: Gossip + Peer Discovery
+### Thread 0: Gossip + Peer Discovery (background tokio task)
 ```
 Loop:
   ping/pong with entrypoint to join gossip
   send PullRequest every 5s → receive PushResponses with ContactInfos
   maintain CRDS table: prune old entries every 30s
   on each discovery cycle:
-    emit peer list (pubkey, gossip, tvu, serve_repair, shred_version)
-    → shared channel consumed by repair sender
+    emit ContactInfo via mpsc channel → consumed by main loop
 ```
 
-### Thread 1: Ingester
+### Main Loop (single tokio::select!)
+This is the entire pipeline in one place. No separate threads. No queues.
+
 ```
-Loop:
-  // For every known peer, every ~1s:
-  for peer in discovered_peers:
-    if peer has recent slot data we don't have:
-      nonce = rand()
-      request = RepairProtocol::WindowIndex { header{nonce, us, peer}, slot, shred_index }
-      bytes = serialize(request) + sign(serialized request with our keypair)
-      send UDP to peer.serve_repair
+loop {
+    tokio::select! {
+        // Arm 1: New peer discovered via gossip
+        Some(ci) = gossip_rx.recv() => {
+            for idx in 0..NUM_DATA_SHREDS {
+                send_repair_request(socket, peer, keypair, slot, idx)
+            }
+        }
 
-  // Receive responses on same socket:
-  recv_from(socket)
-  if bytes.len() > SIZE_OF_NONCE (8):
-    nonce_bytes = bytes[bytes.len()-8..]
-    shred_bytes = bytes[..bytes.len()-8]
-  if len < 89: skip
-  parse shred_variant
-  get slot, index, fec
-  route to FEC batch:
-    Data:   batch.add_data_shred(data_index, shred_bytes)
-    Code:   batch.add_code_shred(code_position, shred_bytes)
-  if batch.received_count() >= num_data:
-    send batch to RecoveryQueue
-```
-
-Max throughput: bounded by UDP receive speed. On Linux with SO_REUSEPORT,
-you can spawn multiple ingester threads each on their own socket.
-
-Repair requests are rate-limited: one request per peer per ~100ms to avoid
-being throttled. The nonce in each request prevents duplicate responses
-from being processed.
-
-### Thread 2: Recoverer
-```
-Loop:
-  recv batch from RecoveryQueue
-  cauchy = generate_cauchy_matrix(num_data, num_code)
-  recovered = decode(received, row_indices, cauchy, num_data)
-  if recovered.is_some():
-    assemble slot from its FEC batches
-    ring_buffer.put(slot, slot_data)
-    if slot is complete:
-      send slot to MerkleQueue
+        // Arm 2: UDP packet arrives (shred or ping)
+        Ok((len, peer)) = socket.recv_from(&mut buf) => {
+            packet = &buf[..len]
+            match parse_response(packet) {
+                Ping  → respond with Pong + re-send repair requests
+                Shred → {
+                    parse => classify as Data or Code
+                    add to FecBatch
+                    if batch complete:
+                        RS decode (try_recover)
+                        deshred_into_txs (deshredder)
+                        MerkleTree::new (build tree)
+                        ring_buffer.put + file_store.save_slot
+                        remove batch from pending map
+                }
+            }
+        }
+    }
+}
 ```
 
-RS decode is the only expensive operation here (~1ms for 32×32 matrix inversion
-+ 1228×32 column multiply). At 1000+ batches/sec, this thread is the bottleneck.
-Optimization: precompute Cauchy matrix once and reuse.
+**Why this works for v1:**
+- At devnet traffic levels, a slot completes every ~400ms
+- RS decode (~1ms), deshred (~0.1ms), Merkle build (~2ms) = ~3ms total per slot
+- CPU utilization is well under 10% — no bottleneck
+- `tokio::select!` naturally prioritizes I/O (UDP receive) over processing
 
-### Thread 3: Merkle Prover
-```
-Loop:
-  recv slot from MerkleQueue
-  tree = MerkleTree::new(slot.entries)
-  slot.merkle_tree = Some(Arc::new(tree))
-  // Proof is now queryable: merkle_tree.prove(tx_index) → MerkleProof
-```
+**When to split into threads:**
+- RPC server needs its own thread first (blocking I/O + JSON parsing shouldn't
+  delay shred reception)
+- Merkle prover can stay inline until slot rate exceeds ~300/sec (3ms × 300 = 90% CPU)
+- RS recovery can move to thread pool when FEC batches exceed ~1000/sec
 
-Building a Merkle tree over ~1000 transactions (SHA-256 hashing) takes ~1-2ms
-on modern hardware. Only runs once per completed slot. Proof generation is O(log N)
-and happens on demand — not precomputed for every possible transaction.
-
-### Thread 4: RPC Server
+### Thread 4: RPC Server (separate tokio task)
 ```
 Incoming request: "prove tx X in slot Y"
   1. Look up slot Y in ring buffer
@@ -500,17 +487,27 @@ If the slot is in RAM → instant. If on disk → fast. Always available.
 
 ```
 /data/
-  slot_0000001000.dat      ← binary: bincode serialized Vec<Entry>
-  slot_0000001000.proof    ← binary: Merkle tree nodes, ready to serve proofs
-  slot_0000001000.meta     ← JSON: { slot, parent_slot, block_time, num_txs }
-  slot_0000001001.dat
-  slot_0000001001.proof
-  slot_0000001001.meta
+  slot_0465322655.dat      ← binary: concatenated recovered shred payloads (30816 bytes)
+  slot_0465322655.meta     ← JSON: { "slot": 465322655, "size": 30816 }
+  slot_0465322696.dat
+  slot_0465322696.meta
   ...
 ```
 
-Each slot is 3 files (data, proof, metadata). Files are written once, never
-modified — append-only semantics for the directory level.
+**Note:** The `.dat` file stores the raw concatenated shred payloads (not
+deserialized entries). This is a v1 simplification — it's what comes out of
+RS recovery glued together. When a cold slot needs to be served, the bytes
+are deserialized → entries → Merkle tree → proof.
+
+**Future:** Store pre-deserialized entries in `.dat` to avoid re-parsing on
+every cold request.
+
+**Current v1:** Each slot is 2 files (data + metadata). No `.proof` file is
+written — proof is generated on demand from the data. Files are written once,
+never modified — append-only semantics for the directory level.
+
+**Future:** Add `.proof` file to cache the Merkle tree on disk, avoiding rebuild
+for cold slots.
 
 ### 7.4 In-Memory Index
 
@@ -535,21 +532,29 @@ per slot — 1 million slots would use ~24 MB RAM for the index (negligible).
 
 ---
 
-## 8. Bottleneck Analysis
+## 8. Bottleneck Analysis (Single-Threaded v1)
 
-| Stage | Latency | Throughput | Bottleneck? |
-|-------|---------|-----------|-------------|
-| UDP recv | ~1µs | ~1M pkt/s per core | ❌ No (we do this) |
-| Shred parse | ~0.5µs | 2M+ pkt/s | ❌ No |
-| RS decode | ~1ms | 1000 batches/s | ⚠️ Maybe (need benchmarks) |
-| Merkle tree build | ~2ms | 500 slots/s | ❌ No |
-| Proof query | ~5µs | 200k proofs/s | ❌ No |
+| Stage | Latency | Notes |
+|-------|---------|-------|
+| UDP recv | ~1µs | Fine |
+| Shred parse | ~0.5µs | Fine |
+| RS decode | ~1ms | Fine at devnet rates (~2.5 slots/sec) |
+| Deshred | ~0.1ms | Basically free |
+| Merkle tree build | ~2ms | Fine at devnet rates |
+| Flat file write | ~0.5ms | Sequential, fine |
+| Proof query | ~5µs | Fine |
 
-The only potential bottleneck is RS decode if we receive 1000+ FEC batches per
-second (each needing recovery). Fixes:
-- Precompute Cauchy matrix once
-- Batch RS operations — decode multiple columns in parallel with SIMD or threads
-- Use lookup tables for GF multiplication (already done)
+Total per slot: ~4ms processing. Solana produces 1 slot per 400ms.
+CPU utilization: ~1%. No bottleneck.
+
+**When bottlenecks appear (and how to fix them):**
+
+| Scenario | Bottleneck | Fix |
+|----------|-----------|-----|
+| 100+ slots/sec | RS decode | Move to thread pool |
+| 300+ slots/sec | Merkle build | Separate Merkle thread |
+| 10k+ RPS | Proof queries | Cache rebuilt trees in LRU |
+| Network flood | UDP recv | SO_REUSEPORT + multiple sockets |
 
 ---
 
@@ -571,9 +576,16 @@ empty and fills as repair responses arrive. Old slots are always available from 
 
 ## 10. Design Principles
 
-1. **No locks in hot path** — atomic writes + immutability after write
-2. **Newer data > older data** — drop old shreds before dropping new ones
-3. **Computation is lazy** — build Merkle trees only when someone asks
-4. **Disk is cold, memory is hot** — recent slots in RAM, old ones on disk
-5. **Append-only on disk** — no random writes, no fragmentation
-6. **One writer per stage** — no contention between threads
+1. **No locks** — single-threaded for v1. No mutexes, no atomics, no contention.
+2. **Newer data > older data** — drop old shreds before dropping new ones.
+3. **Merkle tree built eagerly** — tree built inline when slot completes and root
+   stored. Tree NOT stored — rebuilt from flat file if evicted (~2ms cost).
+   Simpler than lazy compute-on-query for v1.
+4. **Disk is cold, memory is hot** — recent slots in RAM, old ones on disk.
+5. **Append-only on disk** — no random writes, no fragmentation.
+6. **Single writer** — everything runs in one thread. No scheduling anomalies.
+
+**Future principles (when multi-threaded):**
+1. No locks in hot path — atomic writes + immutability after write
+2. One writer per stage — no contention between threads
+3. Computation is lazy — defer Merkle building to background thread

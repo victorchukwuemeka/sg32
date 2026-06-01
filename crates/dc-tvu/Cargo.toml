@@ -21,3 +21,6 @@ rand = "0.8"
 dc-gossip = { path = "../dc-gossip" }
 solana-sdk = "2.1"
 solana-transaction = "2.2.3"
+axum = { workspace = true }
+serde_json = { workspace = true }
+hex = { workspace = true }

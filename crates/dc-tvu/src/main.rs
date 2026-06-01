@@ -13,9 +13,11 @@ use dc_tvu::flat_file_store::FlatFileStore;
 use dc_tvu::merkle_prover::MerkleTree;
 use dc_tvu::reed_solomon::{NUM_CODE_SHREDS, NUM_DATA_SHREDS};
 use dc_tvu::ring_buffer::{SlotData, SlotRingBuffer};
+use dc_tvu::rpc_server::{self, AppState};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 const PACKET_DATA_SIZE: usize = 1232;
 
@@ -39,8 +41,20 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let mut batches: HashMap<ErasureSetId, FecBatch> = HashMap::new();
-    let mut ring_buffer = SlotRingBuffer::new(500);
-    let mut file_store = FlatFileStore::new("data".into())?;
+    let ring_buffer = Arc::new(RwLock::new(SlotRingBuffer::new(500)));
+    let file_store = Arc::new(RwLock::new(FlatFileStore::new("data".into())?));
+
+    let state = Arc::new(AppState {
+        ring_buffer: ring_buffer.clone(),
+        file_store: file_store.clone(),
+    });
+    let rpc_router = rpc_server::router(state);
+    let rpc_addr: std::net::SocketAddr = "0.0.0.0:8899".parse().unwrap();
+    println!("RPC server on {}", rpc_addr);
+    tokio::spawn(async move {
+        let listener = tokio::net::TcpListener::bind(rpc_addr).await.unwrap();
+        axum::serve(listener, rpc_router).await.unwrap();
+    });
     let mut buf = vec![0u8; PACKET_DATA_SIZE];
 
     println!("Waiting for gossip peers...");
@@ -122,18 +136,20 @@ async fn main() -> anyhow::Result<()> {
                                     println!("★★★ RECOVERED {} shreds! ★★★", recovered.len());
                                     if let Some(result) = deshredder::deshred_into_txs(&recovered) {
                                         let tree = MerkleTree::new(&result.transactions);
+                                        let root = tree.root;
                                         let slot_data = SlotData {
                                             slot: batch.slot,
                                             parent_slot: batch.parent_slot,
                                             entries: bincode::serialize(&result.entries).unwrap_or_default(),
                                             num_transactions: result.transactions.len(),
-                                            merkle_root: Some(tree.root),
+                                            merkle_root: Some(root),
+                                            merkle_tree: Some(Arc::new(tree)),
                                         };
-                                        ring_buffer.put(slot_data);
+                                        ring_buffer.write().await.put(slot_data);
                                         let concat: Vec<u8> = recovered.concat();
-                                        let _ = file_store.save_slot(batch.slot, &concat);
+                                        let _ = file_store.write().await.save_slot(batch.slot, &concat);
                                         println!("   → {} txs, root={:?}",
-                                            result.transactions.len(), &tree.root[..4]);
+                                            result.transactions.len(), &root[..4]);
                                     }
                                     batches.remove(&batch_id);
                                 }
