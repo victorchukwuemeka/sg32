@@ -11,6 +11,14 @@ data/
 gossip.log
 *.log
 
+# Notes & scratch
+FUTURE.md
+POPULARITY_STRATEGIES.md
+session_o_cnow.md
+why_build_this.md
+pipeline_diagram.*
+*.md~
+
 # IDE
 .vscode/
 .idea/
