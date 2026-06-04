@@ -34,7 +34,7 @@ impl Handler {
                         Some(v.slot)
                     } else { None };
                     if vote_slot.is_some() {
-                        eprintln!("[HANDLER] received Vote with slot={:?}", vote_slot);
+                        // eprintln!("[HANDLER] received Vote with slot={:?}", vote_slot);
                     }
                     if table.merge(value) {
                         tracing::info!("new/updated entry from {pk}");

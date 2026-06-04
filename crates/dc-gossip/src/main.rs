@@ -45,10 +45,10 @@ async fn main() -> Result<(), anyhow::Error> {
         .next()
         .ok_or_else(|| anyhow::anyhow!("Could not resolve devnet entrypoint"))?;
 
-    let transport = Transport::new("0.0.0.0:8000").await?;
+    let transport = Transport::new("0.0.0.0:8001").await?;
 
     let public_ip = reqwest::get("https://api.ipify.org").await?.text().await?;
-    let gossip_addr: SocketAddr = format!("{}:8000", public_ip).parse()?;
+    let gossip_addr: SocketAddr = format!("{}:8001", public_ip).parse()?;
 
     // ===== PHASE 1: PING/PONG HANDSHAKE =====
 

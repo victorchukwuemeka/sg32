@@ -9,3 +9,4 @@ pub mod ring_buffer;
 pub mod rpc_server;
 pub mod shred;
 pub mod shred_header;
+pub mod stats;

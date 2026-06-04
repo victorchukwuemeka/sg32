@@ -1,36 +1,18 @@
 /target
-docs/book/
-POPULARITY_STRATEGIES.md
-why_build_this.md
-session_o_cnow.md
-FUTURE.md
+**/*.rs.bk
+Cargo.lock
 
-# mdbook generated output
-*.html
-*.css
-*.js
-*.woff2
-*.png
-*.svg
-css/
-fonts/
-ayu-highlight-3fdfc3ac.css
-book-a0b12cfe.js
-clipboard-1626706a.min.js
-elasticlunr-ef4e11c1.min.js
-favicon-8114d1fc.png
-favicon-de23e50b.svg
-highlight-493f70e1.css
-highlight-abc7f01d.js
-mark-09e88c2c.min.js
-searcher-c2a407aa.js
-searchindex-e7474215.js
-toc-0021db9f.js
-tomorrow-night-4c0ae647.css
-ledger.png
-404.html
-print.html
-toc.html
-
-# devnet slot data
+# Data
 data/
+*.dat
+*.meta
+
+# Logs
+gossip.log
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

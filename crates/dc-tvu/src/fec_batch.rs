@@ -62,6 +62,16 @@ impl FecBatch {
             return None;
         }
 
+        // If all data shreds are already present, no RS recovery needed.
+        if present_data == self.num_data {
+            return Some(
+                self.data_shreds
+                    .iter()
+                    .map(|s| s.as_ref().cloned().unwrap_or_default())
+                    .collect(),
+            );
+        }
+
         let cauchy = reed_solomon::generate_cauchy_matrix(self.num_data, self.num_code);
         let mut received = Vec::with_capacity(self.num_data);
         let mut row_indices = Vec::with_capacity(self.num_data);

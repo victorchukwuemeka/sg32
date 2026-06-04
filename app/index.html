@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sg32 — Trustless Solana Block Proofs</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    color: #c0c0c0;
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  a { color: #5af; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1, h2, h3 { color: #0f0; font-weight: 400; }
+  h1 { font-size: 2rem; margin-bottom: 0.25rem; letter-spacing: 0.1em; }
+  h1 .accent { color: #5af; }
+  .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
+  h2 { font-size: 1.2rem; margin: 2rem 0 0.5rem; border-bottom: 1px solid #222; padding-bottom: 0.25rem; }
+  h3 { font-size: 1rem; margin: 1.5rem 0 0.25rem; color: #5af; }
+  p { margin: 0.5rem 0; max-width: 720px; }
+  pre {
+    background: #111;
+    border: 1px solid #222;
+    border-left: 3px solid #0f0;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    font-size: 13px;
+    color: #0f0;
+  }
+  code { background: #111; padding: 0.1rem 0.3rem; font-size: 13px; }
+  pre code { background: none; padding: 0; }
+  .container { max-width: 960px; margin: 0 auto; }
+  .terminal { border: 1px solid #333; padding: 1.5rem; background: #0d0d0d; margin: 1rem 0; }
+  .prompt { color: #0f0; }
+  .highlight { color: #ffd343; }
+  .dim { color: #666; }
+  .diagram {
+    background: #0d0d0d;
+    border: 1px solid #222;
+    padding: 1.5rem;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: pre;
+    overflow-x: auto;
+    color: #5af;
+    margin: 1rem 0;
+  }
+  table { border-collapse: collapse; margin: 1rem 0; width: 100%; }
+  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #222; }
+  th { color: #0f0; font-weight: 400; }
+  td { font-size: 13px; }
+  .tag {
+    display: inline-block;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 0.1rem 0.4rem;
+    font-size: 11px;
+    margin-right: 0.3rem;
+  }
+  .tag-python { color: #ffd343; }
+  .tag-js { color: #f0db4f; }
+  .tag-rust { color: #dea584; }
+  .tag-curl { color: #5af; }
+
+  /* Live dashboard */
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  .stat-card {
+    background: #0d0d0d;
+    border: 1px solid #222;
+    border-top: 2px solid #0f0;
+    padding: 1rem;
+  }
+  .stat-card .label { color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .stat-card .value { color: #0f0; font-size: 1.4rem; margin-top: 0.25rem; font-weight: bold; }
+  .stat-card .value.blink { animation: blink 1.2s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0.3; } }
+  .stat-card.pending .value { color: #ffd343; }
+  .stat-card.ok .value { color: #0f0; }
+  .stat-card.err .value { color: #f55; }
+
+  /* Shred bar */
+  .shred-bar-container { margin: 0.5rem 0; }
+  .shred-bar-label { font-size: 11px; color: #666; margin-bottom: 0.25rem; }
+  .shred-bar-track {
+    background: #111;
+    border: 1px solid #222;
+    height: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .shred-bar-fill {
+    height: 100%;
+    background: #0f0;
+    transition: width 0.5s ease;
+  }
+  .shred-bar-fill.code { background: #5af; }
+  .shred-bar-text {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    text-align: center;
+    line-height: 20px;
+    font-size: 11px;
+    color: #fff;
+  }
+
+  /* Live log */
+  .live-log {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    padding: 1rem;
+    height: 200px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0.5rem 0;
+  }
+  .live-log .line { white-space: pre; }
+  .live-log .ts { color: #555; }
+  .live-log .info { color: #5af; }
+  .live-log .ok { color: #0f0; }
+  .live-log .warn { color: #ffd343; }
+  .live-log .err { color: #f55; }
+
+  .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #222; color: #555; font-size: 12px; }
+
+  @media (max-width: 600px) {
+    body { padding: 1rem; font-size: 13px; }
+    pre { font-size: 12px; padding: 0.75rem; }
+    .dashboard { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>SG<span class="accent">32</span></h1>
+<p class="subtitle">Solana Light Node &mdash; Shred Recovery &amp; Trustless Merkle Proofs</p>
+
+<div class="terminal">
+  <span class="prompt">sg32 $</span> ./sg32<br>
+  <span class="dim">Listening on 0.0.0.0:8003</span><br>
+  <span class="dim">RPC server on 0.0.0.0:8899</span><br>
+  <span class="dim">Waiting for gossip peers...</span><br>
+  <span class="prompt">[OK]</span> <span class="dim">latest_slot=</span><span id="hero-slot">--</span><span class="dim"> data=</span><span id="hero-data">--</span><span class="dim">/32 code=</span><span id="hero-code">--</span><span class="dim">/32 txs=</span><span id="hero-txs">--</span><br>
+</div>
+
+<h2>Live Dashboard</h2>
+
+<div class="dashboard">
+  <div class="stat-card pending" id="card-slot">
+    <div class="label">Latest Slot</div>
+    <div class="value blink" id="stat-slot">--</div>
+  </div>
+  <div class="stat-card pending" id="card-shreds">
+    <div class="label">Data Shreds</div>
+    <div class="value" id="stat-data">0 / 32</div>
+  </div>
+  <div class="stat-card pending" id="card-code">
+    <div class="label">Code Shreds</div>
+    <div class="value" id="stat-code">0 / 32</div>
+  </div>
+  <div class="stat-card pending" id="card-txs">
+    <div class="label">Transactions</div>
+    <div class="value" id="stat-txs">--</div>
+  </div>
+  <div class="stat-card pending" id="card-root">
+    <div class="label">Merkle Root</div>
+    <div class="value" id="stat-root" style="font-size:0.75rem;word-break:break-all;">--</div>
+  </div>
+  <div class="stat-card pending" id="card-blocks">
+    <div class="label">Blocks Cached</div>
+    <div class="value" id="stat-blocks">--</div>
+  </div>
+</div>
+
+<div class="shred-bar-container">
+  <div class="shred-bar-label">Data Shreds</div>
+  <div class="shred-bar-track">
+    <div class="shred-bar-fill" id="bar-data" style="width:0%"></div>
+    <div class="shred-bar-text" id="bar-data-text">0 / 32</div>
+  </div>
+</div>
+<div class="shred-bar-container">
+  <div class="shred-bar-label">Code Shreds</div>
+  <div class="shred-bar-track">
+    <div class="shred-bar-fill code" id="bar-code" style="width:0%"></div>
+    <div class="shred-bar-text" id="bar-code-text">0 / 32</div>
+  </div>
+</div>
+
+<h2>Live Log</h2>
+<div class="live-log" id="log">
+  <div class="line"><span class="ts">[--:--:--]</span> <span class="info">waiting for data...</span></div>
+</div>
+
+<h2>Architecture</h2>
+
+<div class="diagram">
+┌────────────────────────────────────────────────────────────┐
+│                    sg32 (single binary)                     │
+├────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────┐    ┌──────────┐    ┌───────────────┐         │
+│  │  Gossip   │───>│  Repair  │───>│  FEC Recovery │         │
+│  │ (port     │    │ (port    │    │  (Reed-       │         │
+│  │  8001)    │    │  8003)   │    │   Solomon)    │         │
+│  └──────────┘    └──────────┘    └───────┬───────┘         │
+│                                          │                  │
+│  ┌──────────┐    ┌──────────┐    ┌───────▼───────┐         │
+│  │  RPC     │<───│  Merkle  │<───│  Deshredder   │         │
+│  │ (:8899)  │    │  Tree    │    │  Entries->TXs │         │
+│  └──────────┘    └──────────┘    └───────────────┘         │
+│       │                                                    │
+│       ▼                                                    │
+│  ┌──────────┐    ┌──────────────┐                          │
+│  │  Memory  │    │  Flat File   │                          │
+│  │  (ring   │    │  (disk,      │                          │
+│  │  buffer) │    │  cold reads) │                          │
+│  └──────────┘    └──────────────┘                          │
+│                                                             │
+└────────────────────────────────────────────────────────────┘
+          │
+          ▼
+   ┌──────────────┐     ┌──────────────────┐
+   │  Your Bot /  │     │  Bridge /        │
+   │  Relayer     │     │  Light Client    │
+   │              │     │                  │
+   │ verify(tx)   │     │ verify(proof)    │
+   └──────────────┘     └──────────────────┘
+</div>
+
+<p>sg32 connects to Solana's gossip network, discovers validators, and requests block data via the repair protocol. It recovers the full block using Reed-Solomon erasure coding, builds a Merkle tree over the transactions, and serves verifiable inclusion proofs over HTTP.</p>
+
+<h2>API</h2>
+
+<table>
+  <tr><th>Method</th><th>Params</th><th>Returns</th></tr>
+  <tr><td>getLatestSlot</td><td>(none)</td><td>slot, merkle_root, num_transactions</td></tr>
+  <tr><td>getSlot</td><td>[slot]</td><td>slot, parent_slot, merkle_root, num_transactions</td></tr>
+  <tr><td>getBlock</td><td>[slot]</td><td>slot, num_entries, num_transactions</td></tr>
+  <tr><td>getProof</td><td>[slot, tx_index]</td><td>leaf, proof[], root, verified</td></tr>
+</table>
+
+<h2>Quick Start</h2>
+
+<h3>Run</h3>
+<pre><code>./sg32</code></pre>
+
+<h3>Check latest slot</h3>
+<pre><code>curl -X POST http://localhost:8899/jsonrpc \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"getLatestSlot","id":1}'</code></pre>
+
+<h3>Get a Merkle proof</h3>
+<pre><code>curl -X POST http://localhost:8899/jsonrpc \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"getProof","params":[466680759, 0],"id":1}'</code></pre>
+
+<p>The response includes a <code>verified</code> field. If <code>true</code>, the transaction at that index is cryptographically proven to be in the block.</p>
+
+<h2>Integration Guides</h2>
+
+<h3>curl <span class="tag tag-curl">shell</span></h3>
+<pre><code>#!/bin/bash
+SLOT=466680759
+TX_INDEX=0
+
+curl -s -X POST http://localhost:8899/jsonrpc \
+  -H 'Content-Type: application/json' \
+  -d "{\"jsonrpc\":\"2.0\",\"method\":\"getProof\",\"params\":[$SLOT, $TX_INDEX],\"id\":1}" | \
+  python3 -c "import sys,json; r=json.load(sys.stdin)['result']; print('verified:', r['verified'])"</code></pre>
+
+<h3>Python <span class="tag tag-python">python</span></h3>
+<pre><code>import requests, json
+
+RPC = "http://localhost:8899/jsonrpc"
+HEADERS = {"Content-Type": "application/json"}
+
+def get_proof(slot: int, tx_index: int) -> dict:
+    resp = requests.post(RPC, json={
+        "jsonrpc": "2.0",
+        "method": "getProof",
+        "params": [slot, tx_index],
+        "id": 1
+    }, headers=HEADERS)
+    return resp.json()["result"]
+
+proof = get_proof(466680759, 0)
+if proof["verified"]:
+    print(f"Transaction is in slot {proof['slot']}")
+    print(f"Merkle root: {proof['root']}")
+else:
+    print("Proof verification failed")</code></pre>
+
+<h3>JavaScript <span class="tag tag-js">js</span></h3>
+<pre><code>const RPC = "http://localhost:8899/jsonrpc";
+
+async function getProof(slot, txIndex) {
+  const res = await fetch(RPC, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method: "getProof",
+      params: [slot, txIndex],
+      id: 1
+    })
+  });
+  const { result } = await res.json();
+  return result;
+}
+
+getProof(466680759, 0).then(proof => {
+  if (proof.verified) {
+    console.log(`Transaction is in slot ${proof.slot}`);
+  }
+});</code></pre>
+
+<h3>Rust <span class="tag tag-rust">rust</span></h3>
+<pre><code>use serde_json::json;
+
+#[tokio::main]
+async fn main() -> Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+    let client = reqwest::Client::new();
+    let resp = client
+        .post("http://localhost:8899/jsonrpc")
+        .json(&amp;json!({
+            "jsonrpc": "2.0",
+            "method": "getProof",
+            "params": [466680759, 0],
+            "id": 1
+        }))
+        .send()
+        .await?
+        .json::&lt;serde_json::Value&gt;()
+        .await?;
+    let verified = resp["result"]["verified"].as_bool().unwrap_or(false);
+    println!("verified: {}", verified);
+    Ok(())
+}</code></pre>
+
+<h2>For Relayers and Bridges</h2>
+
+<p>Your relayer or bridge can verify a transaction's inclusion in a Solana block without trusting any third party:</p>
+
+<pre><code>flow:
+  1. User submits transaction to Solana
+  2. Your relayer detects the tx in a confirmed block
+  3. Your relayer calls getProof(slot, tx_index) on sg32
+  4. It checks proof.verified == true
+  5. It independently verifies the Merkle root matches
+     the block hash from a trusted source (e.g. your own
+     light client, another sg32 node, or a public explorer)
+  6. If both match, the transaction is provably included</code></pre>
+
+<p>No RPC provider to trust. No full node to run. One binary, one port.</p>
+
+<div class="footer">
+  sg32 &mdash; MIT License &mdash; github.com/anomalyco/sg32
+</div>
+
+</div>
+
+<script>
+const RPC = "/jsonrpc";
+const STATS = "/stats";
+const HEADERS = { "Content-Type": "application/json" };
+const logEl = document.getElementById("log");
+let prevSlot = 0;
+
+function ts() {
+  return new Date().toTimeString().slice(0, 8);
+}
+
+function log(type, msg) {
+  const cls = type === "info" ? "info" : type === "ok" ? "ok" : type === "warn" ? "warn" : type === "err" ? "err" : "";
+  const line = document.createElement("div");
+  line.className = "line";
+  line.innerHTML = `<span class="ts">[${ts()}]</span> <span class="${cls}">${msg}</span>`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+  while (logEl.children.length > 100) logEl.removeChild(logEl.firstChild);
+}
+
+function updateShredBar(fillId, textId, current, total) {
+  const pct = total > 0 ? Math.min(100, (current / total) * 100) : 0;
+  const fill = document.getElementById(fillId);
+  const txt = document.getElementById(textId);
+  if (fill) fill.style.width = pct + "%";
+  if (txt) txt.textContent = current + " / " + total;
+}
+
+function setCardState(cardId, state) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  card.className = "stat-card " + state;
+  const val = card.querySelector(".value");
+  if (val) {
+    if (state === "pending") val.classList.add("blink");
+    else val.classList.remove("blink");
+  }
+}
+
+async function poll() {
+  try {
+    const resp = await fetch(STATS);
+    const s = await resp.json();
+
+    const slot = s.latest_slot || 0;
+    const txs = s.latest_block_txs || 0;
+    const root = s.latest_block_root || "--";
+    const totalBlocks = s.total_blocks_recovered || 0;
+    const filesOnDisk = s.files_on_disk || 0;
+    const dataShreds = s.current_batch ? s.current_batch.data_shreds : 0;
+    const codeShreds = s.current_batch ? s.current_batch.code_shreds : 0;
+    const numData = s.current_batch ? s.current_batch.num_data : 32;
+    const numCode = s.current_batch ? s.current_batch.num_code : 32;
+
+    document.getElementById("hero-slot").textContent = slot;
+    document.getElementById("hero-data").textContent = dataShreds;
+    document.getElementById("hero-code").textContent = codeShreds;
+    document.getElementById("hero-txs").textContent = txs;
+
+    document.getElementById("stat-slot").textContent = slot || "--";
+    document.getElementById("stat-data").textContent = dataShreds + " / " + numData;
+    document.getElementById("stat-code").textContent = codeShreds + " / " + numCode;
+    document.getElementById("stat-txs").textContent = txs || "--";
+    document.getElementById("stat-root").textContent = root !== "--" ? root.slice(0, 16) + "..." : "--";
+    document.getElementById("stat-blocks").textContent = totalBlocks;
+
+    updateShredBar("bar-data", "bar-data-text", dataShreds, numData);
+    updateShredBar("bar-code", "bar-code-text", codeShreds, numCode);
+
+    setCardState("card-slot", slot > 0 ? "ok" : "pending");
+    setCardState("card-shreds", dataShreds > 0 ? "ok" : "pending");
+    setCardState("card-code", codeShreds > 0 ? "ok" : "pending");
+    setCardState("card-txs", txs > 0 ? "ok" : "pending");
+    setCardState("card-root", root !== "--" ? "ok" : "pending");
+    setCardState("card-blocks", totalBlocks > 0 ? "ok" : "pending");
+
+    if (slot !== prevSlot) {
+      if (prevSlot !== 0) {
+        log("ok", "slot " + slot + " recovered  |  " + txs + " txs  |  total blocks: " + totalBlocks);
+      }
+      prevSlot = slot;
+    }
+
+  } catch (e) {
+    log("err", "poll error: " + e.message);
+    setCardState("card-slot", "err");
+  }
+}
+
+log("info", "dashboard live -- polling /stats every 3s");
+poll();
+setInterval(poll, 3000);
+</script>
+</body>
+</html>

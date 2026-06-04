@@ -1,6 +1,7 @@
 use crate::flat_file_store::FlatFileStore;
 use crate::merkle_prover::MerkleTree;
 use crate::ring_buffer::SlotRingBuffer;
+use crate::stats::SharedStats;
 use axum::{extract::State, Json, Router};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -9,6 +10,7 @@ use tokio::sync::RwLock;
 pub struct AppState {
     pub ring_buffer: Arc<RwLock<SlotRingBuffer>>,
     pub file_store: Arc<RwLock<FlatFileStore>>,
+    pub stats: SharedStats,
 }
 
 #[derive(Deserialize)]
@@ -47,8 +49,34 @@ pub struct ProofResponse {
 
 pub fn router(state: Arc<AppState>) -> Router {
     Router::new()
+        .route("/", axum::routing::get(index_handler))
         .route("/jsonrpc", axum::routing::post(jsonrpc_handler))
+        .route("/stats", axum::routing::get(stats_handler))
         .with_state(state)
+}
+
+async fn index_handler() -> (axum::http::StatusCode, [(&'static str, &'static str); 1], &'static str) {
+    (axum::http::StatusCode::OK, [("content-type", "text/html")], INDEX_HTML)
+}
+
+async fn stats_handler(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+    let stats = state.stats.read().await;
+    Json(serde_json::json!({
+        "latest_slot": stats.latest_slot,
+        "current_batch": {
+            "slot": stats.current_batch.slot,
+            "fec_set_index": stats.current_batch.fec_set_index,
+            "data_shreds": stats.current_batch.data_shreds,
+            "code_shreds": stats.current_batch.code_shreds,
+            "num_data": stats.current_batch.num_data,
+            "num_code": stats.current_batch.num_code,
+        },
+        "total_blocks_recovered": stats.total_blocks_recovered,
+        "blocks_in_ring_buffer": stats.blocks_in_ring_buffer,
+        "files_on_disk": stats.files_on_disk,
+        "latest_block_txs": stats.latest_block_txs,
+        "latest_block_root": hex::encode(stats.latest_block_root),
+    }))
 }
 
 async fn jsonrpc_handler(
@@ -79,10 +107,10 @@ async fn handle_get_slot(
         .unwrap_or(0);
 
     let buf = state.ring_buffer.read().await;
-    let result = buf.get(slot);
+    let hot = buf.get(slot);
 
-    match result {
-        Some(data) => Json(JsonRpcResponse {
+    if let Some(data) = hot {
+        return Json(JsonRpcResponse {
             jsonrpc: "2.0".into(),
             result: Some(serde_json::json!({
                 "slot": data.slot,
@@ -92,7 +120,38 @@ async fn handle_get_slot(
             })),
             error: None,
             id,
-        }),
+        });
+    }
+    drop(buf);
+
+    let store = state.file_store.read().await;
+    match store.load_slot(slot) {
+        Some(bytes) => {
+            let result = crate::deshredder::deshred_into_txs(&[bytes]);
+            match result {
+                Some(r) => {
+                    let num_tx = r.transactions.len();
+                    let tree = crate::merkle_prover::MerkleTree::new(&r.transactions);
+                    let root = hex::encode(tree.root);
+                    Json(JsonRpcResponse {
+                        jsonrpc: "2.0".into(),
+                        result: Some(serde_json::json!({
+                            "slot": slot,
+                            "num_transactions": num_tx,
+                            "merkle_root": root,
+                        })),
+                        error: None,
+                        id,
+                    })
+                }
+                None => Json(JsonRpcResponse {
+                    jsonrpc: "2.0".into(),
+                    result: None,
+                    error: Some(format!("slot {} corrupt", slot)),
+                    id,
+                }),
+            }
+        }
         None => Json(JsonRpcResponse {
             jsonrpc: "2.0".into(),
             result: None,
@@ -264,3 +323,5 @@ async fn handle_get_block(
         }),
     }
 }
+
+const INDEX_HTML: &str = include_str!("../../../app/index.html");

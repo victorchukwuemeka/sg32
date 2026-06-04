@@ -1,6 +1,7 @@
 use bincode;
 use solana_sdk::hash::Hash;
-use solana_transaction::versioned::VersionedTransaction;
+use solana_sdk::transaction::VersionedTransaction;
+use std::io::Cursor;
 
 pub struct DeshredResult {
     pub entries: Vec<Entry>,
@@ -11,6 +12,7 @@ pub struct DeshredResult {
 pub struct Entry {
     pub num_hashes: u64,
     pub hash: Hash,
+    #[serde(with = "solana_short_vec")]
     pub transactions: Vec<VersionedTransaction>,
 }
 
@@ -20,11 +22,27 @@ pub fn deshred_into_txs(data_payloads: &[Vec<u8>]) -> Option<DeshredResult> {
         all_data.extend_from_slice(payload);
     }
 
-    while all_data.last() == Some(&0) {
-        all_data.pop();
+    let mut reader = Cursor::new(&all_data);
+    let mut entries = Vec::new();
+    loop {
+        let pos = reader.position() as usize;
+        if pos >= all_data.len() {
+            break;
+        }
+        match bincode::deserialize_from::<_, Entry>(&mut reader) {
+            Ok(entry) => {
+                if entry.num_hashes == 0 && entry.hash == Hash::default() && entry.transactions.is_empty() {
+                    break;
+                }
+                entries.push(entry);
+            }
+            Err(_) => break,
+        }
     }
 
-    let entries: Vec<Entry> = bincode::deserialize(&all_data).ok()?;
+    if entries.is_empty() {
+        return None;
+    }
 
     let transactions: Vec<Vec<u8>> = entries
         .iter()
@@ -36,8 +54,4 @@ pub fn deshred_into_txs(data_payloads: &[Vec<u8>]) -> Option<DeshredResult> {
         entries,
         transactions,
     })
-}
-
-pub fn deshred_into_txs_from_shreds(shred_data: &[Vec<u8>]) -> Option<DeshredResult> {
-    deshred_into_txs(shred_data)
 }

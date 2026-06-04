@@ -49,6 +49,10 @@ impl SlotRingBuffer {
         }
     }
 
+    pub fn len(&self) -> usize {
+        (self.tail.saturating_sub(self.head)) as usize
+    }
+
     pub fn get(&self, slot: u64) -> Option<Arc<SlotData>> {
         if slot < self.head || slot >= self.tail {
             return None;

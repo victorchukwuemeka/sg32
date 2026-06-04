@@ -1,3 +1,4 @@
+use clap::Parser;
 use dc_gossip::contact_info::ContactInfo;
 use dc_gossip::run_gossip_loop;
 use dc_tvu::repair::{build_pong, parse_response, send_repair_request, Response};
@@ -14,6 +15,7 @@ use dc_tvu::merkle_prover::MerkleTree;
 use dc_tvu::reed_solomon::{NUM_CODE_SHREDS, NUM_DATA_SHREDS};
 use dc_tvu::ring_buffer::{SlotData, SlotRingBuffer};
 use dc_tvu::rpc_server::{self, AppState};
+use dc_tvu::stats;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -21,35 +23,62 @@ use tokio::sync::RwLock;
 
 const PACKET_DATA_SIZE: usize = 1232;
 
+#[derive(Parser)]
+#[command(name = "sg32", about = "Solana Light Node — Shred Recovery & Trustless Merkle Proofs")]
+struct Args {
+    #[arg(long, default_value = "8899")]
+    rpc_port: u16,
+
+    #[arg(long, default_value = "8003")]
+    repair_port: u16,
+
+    #[arg(long, default_value = "8001")]
+    gossip_port: u16,
+
+    #[arg(long, default_value = "data")]
+    data_dir: String,
+
+    #[arg(long, default_value = "entrypoint.devnet.solana.com:8001")]
+    entrypoint: String,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+
     let mut secret = [0u8; 32];
     rand::rngs::OsRng.fill_bytes(&mut secret);
     let our_key = ed25519_dalek::SigningKey::from_bytes(&secret);
     println!("Our pubkey: {:?}", our_key.verifying_key().to_bytes());
 
-    let socket = UdpSocket::bind("0.0.0.0:8003").await?;
-    println!("Listening on 0.0.0.0:8003");
+    let repair_bind = format!("0.0.0.0:{}", args.repair_port);
+    let socket = UdpSocket::bind(&repair_bind).await?;
+    println!("Listening on {}", repair_bind);
 
     let latest_slot = Arc::new(AtomicU64::new(0));
     let latest_slot_clone = latest_slot.clone();
+    let gossip_port = args.gossip_port;
+    let entrypoint = args.entrypoint.clone();
     let (gossip_tx, mut gossip_rx) = mpsc::channel::<ContactInfo>(1000);
     tokio::spawn(async move {
-        if let Err(e) = run_gossip_loop(gossip_tx, latest_slot_clone).await {
+        if let Err(e) = run_gossip_loop(gossip_tx, latest_slot_clone, gossip_port, &entrypoint).await {
             eprintln!("gossip error: {e}");
         }
     });
 
     let mut batches: HashMap<ErasureSetId, FecBatch> = HashMap::new();
     let ring_buffer = Arc::new(RwLock::new(SlotRingBuffer::new(500)));
-    let file_store = Arc::new(RwLock::new(FlatFileStore::new("data".into())?));
+    let data_dir = args.data_dir.clone();
+    let file_store = Arc::new(RwLock::new(FlatFileStore::new(data_dir.clone().into())?));
+    let pipeline_stats = stats::new_shared_stats();
 
     let state = Arc::new(AppState {
         ring_buffer: ring_buffer.clone(),
         file_store: file_store.clone(),
+        stats: pipeline_stats.clone(),
     });
     let rpc_router = rpc_server::router(state);
-    let rpc_addr: std::net::SocketAddr = "0.0.0.0:8899".parse().unwrap();
+    let rpc_addr: std::net::SocketAddr = format!("0.0.0.0:{}", args.rpc_port).parse().unwrap();
     println!("RPC server on {}", rpc_addr);
     tokio::spawn(async move {
         let listener = tokio::net::TcpListener::bind(rpc_addr).await.unwrap();
@@ -70,7 +99,7 @@ async fn main() -> anyhow::Result<()> {
                     let slot = latest_slot.load(Ordering::Relaxed);
                     println!("-> Validator {:?} slot={} serve_repair={}",
                         &pk[..4], slot, addr);
-                    for idx in 0..NUM_DATA_SHREDS as u64 {
+                    for idx in 0..(NUM_DATA_SHREDS + NUM_CODE_SHREDS) as u64 {
                         match send_repair_request(&socket, addr, &our_key, &pk, slot, idx).await {
                             Ok(nonce) => println!("<- sent req (nonce={}, idx={}) to {}", nonce, idx, addr),
                             Err(e) => eprintln!("repair failed (idx={}): {e}", idx),
@@ -91,7 +120,7 @@ async fn main() -> anyhow::Result<()> {
                             Ok(n) => println!("Pong sent ({} bytes) to {}", n, peer),
                             Err(e) => eprintln!("Pong send failed: {e}"),
                         }
-                        for idx in 0..NUM_DATA_SHREDS as u64 {
+                        for idx in 0..(NUM_DATA_SHREDS + NUM_CODE_SHREDS) as u64 {
                             match send_repair_request(&socket, peer, &our_key, &pubkey, slot, idx).await {
                                 Ok(nonce) => println!("Re-sent req (nonce={}, idx={}) to {}", nonce, idx, peer),
                                 Err(e) => eprintln!("re-send failed (idx={}): {e}", idx),
@@ -114,6 +143,17 @@ async fn main() -> anyhow::Result<()> {
                                 let batch = batches.entry(batch_id).or_insert_with(|| {
                                     FecBatch::new(batch_id.slot, batch_id.fec_set_index, num_data, num_code)
                                 });
+                                let data_count = batch.data_shreds.iter().filter(|s| s.is_some()).count();
+                                let code_count = batch.code_shreds.iter().filter(|s| s.is_some()).count();
+                                {
+                                    let mut s = pipeline_stats.write().await;
+                                    s.current_batch.slot = shred.slot();
+                                    s.current_batch.fec_set_index = batch_id.fec_set_index;
+                                    s.current_batch.data_shreds = data_count;
+                                    s.current_batch.code_shreds = code_count;
+                                    s.current_batch.num_data = batch.num_data;
+                                    s.current_batch.num_code = batch.num_code;
+                                }
                                 match &shred {
                                     Shred::MerkleData { common_header, data_header, data, .. } => {
                                         let data_index = common_header.index - common_header.fec_set_index;
@@ -150,6 +190,15 @@ async fn main() -> anyhow::Result<()> {
                                         let _ = file_store.write().await.save_slot(batch.slot, &concat);
                                         println!("   → {} txs, root={:?}",
                                             result.transactions.len(), &root[..4]);
+                                        {
+                                            let mut s = pipeline_stats.write().await;
+                                            s.total_blocks_recovered += 1;
+                                            s.latest_slot = batch.slot;
+                                            s.latest_block_txs = result.transactions.len();
+                                            s.latest_block_root = root;
+                                            s.blocks_in_ring_buffer = ring_buffer.read().await.len();
+                                            s.files_on_disk = std::fs::read_dir(&data_dir).map(|e| e.filter_map(|e| e.ok()).filter(|e| e.path().extension().is_some_and(|x| x == "dat")).count()).unwrap_or(0);
+                                        }
                                     }
                                     batches.remove(&batch_id);
                                 }
@@ -157,7 +206,83 @@ async fn main() -> anyhow::Result<()> {
                             None => println!("parse failed from {}", peer),
                         }
                     }
-                    None => println!("unknown/too-short (len={}) from {}", len, peer),
+                    None => {
+                        // Maybe a raw Turbine push shred (no repair protocol wrapper)
+                        match Shred::parse_from_bytes(packet) {
+                            Some(shred) => {
+                                let batch_id = shred.erasure_set_id();
+                                let num_data = match &shred {
+                                    Shred::MerkleCode { coding_header, .. } => coding_header.num_data_shreds as usize,
+                                    _ => NUM_DATA_SHREDS,
+                                };
+                                let num_code = match &shred {
+                                    Shred::MerkleCode { coding_header, .. } => coding_header.num_coding_shreds as usize,
+                                    _ => NUM_CODE_SHREDS,
+                                };
+                                let batch = batches.entry(batch_id).or_insert_with(|| {
+                                    FecBatch::new(batch_id.slot, batch_id.fec_set_index, num_data, num_code)
+                                });
+                                match &shred {
+                                    Shred::MerkleData { common_header, data_header, data, .. } => {
+                                        let data_index = common_header.index - common_header.fec_set_index;
+                                        batch.add_data_shred(data_index, data.clone());
+                                        if batch.parent_slot == 0 {
+                                            batch.parent_slot = common_header.slot.saturating_sub(data_header.parent_offset as u64);
+                                        }
+                                    }
+                                    Shred::MerkleCode { coding_header, code, .. } => {
+                                        batch.add_code_shred(coding_header.position.into(), code.clone());
+                                    }
+                                }
+                                {
+                                    let mut s = pipeline_stats.write().await;
+                                    s.current_batch.slot = shred.slot();
+                                    s.current_batch.fec_set_index = batch_id.fec_set_index;
+                                    s.current_batch.data_shreds = batch.data_shreds.iter().filter(|s| s.is_some()).count();
+                                    s.current_batch.code_shreds = batch.code_shreds.iter().filter(|s| s.is_some()).count();
+                                    s.current_batch.num_data = batch.num_data;
+                                    s.current_batch.num_code = batch.num_code;
+                                }
+                                println!("TURBINE slot={} fec={} data={}/{} code={}/{} total={}",
+                                    shred.slot(), batch_id.fec_set_index,
+                                    batch.data_shreds.iter().filter(|s| s.is_some()).count(), batch.num_data,
+                                    batch.code_shreds.iter().filter(|s| s.is_some()).count(), batch.num_code,
+                                    batch.received_count(),
+                                );
+                                if let Some(recovered) = batch.try_recover() {
+                                    println!("★★★ RECOVERED {} shreds! ★★★", recovered.len());
+                                    if let Some(result) = deshredder::deshred_into_txs(&recovered) {
+                                        let tree = MerkleTree::new(&result.transactions);
+                                        let root = tree.root;
+                                        let slot_data = SlotData {
+                                            slot: batch.slot,
+                                            parent_slot: batch.parent_slot,
+                                            entries: bincode::serialize(&result.entries).unwrap_or_default(),
+                                            num_transactions: result.transactions.len(),
+                                            merkle_root: Some(root),
+                                            merkle_tree: Some(Arc::new(tree)),
+                                        };
+                                        ring_buffer.write().await.put(slot_data);
+                                        let concat: Vec<u8> = recovered.concat();
+                                        let _ = file_store.write().await.save_slot(batch.slot, &concat);
+                                        println!("   → {} txs, root={:?}",
+                                            result.transactions.len(), &root[..4]);
+                                        {
+                                            let mut s = pipeline_stats.write().await;
+                                            s.total_blocks_recovered += 1;
+                                            s.latest_slot = batch.slot;
+                                            s.latest_block_txs = result.transactions.len();
+                                            s.latest_block_root = root;
+                                            s.blocks_in_ring_buffer = ring_buffer.read().await.len();
+                                            s.files_on_disk = std::fs::read_dir(&data_dir).map(|e| e.filter_map(|e| e.ok()).filter(|e| e.path().extension().is_some_and(|x| x == "dat")).count()).unwrap_or(0);
+                                        }
+                                    }
+                                    batches.remove(&batch_id);
+                                }
+                            }
+                            None => println!("unknown (len={}) from {}", len, peer),
+                        }
+                    }
                 }
             }
         }

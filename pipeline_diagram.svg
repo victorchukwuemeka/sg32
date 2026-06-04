@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="SF Mono, Menlo, monospace" font-size="13">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#555"/>
+    </marker>
+    <linearGradient id="boxGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8f9fa"/>
+      <stop offset="100%" style="stop-color:#e9ecef"/>
+    </linearGradient>
+    <linearGradient id="doneGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#d3f9d8"/>
+      <stop offset="100%" style="stop-color:#b2f2bb"/>
+    </linearGradient>
+    <linearGradient id="nextGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fff3bf"/>
+      <stop offset="100%" style="stop-color:#ffe066"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" fill="#fff" rx="8"/>
+  <text x="450" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#1c1c1c">sg32 — TVU Pipeline</text>
+
+  <!-- Stage 1: Gossip -->
+  <rect x="40" y="55" width="160" height="60" rx="6" fill="url(#doneGrad)" stroke="#2b8a3e" stroke-width="1.5"/>
+  <text x="120" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="#2b8a3e">Gossip Discovery</text>
+  <text x="120" y="97" text-anchor="middle" font-size="11" fill="#555">devnet peer discovery</text>
+  <text x="120" y="112" text-anchor="middle" font-size="10" fill="#888">✅ port 8000</text>
+
+  <!-- Arrow 1 -->
+  <line x1="200" y1="85" x2="250" y2="85" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Stage 2: Repair -->
+  <rect x="260" y="55" width="160" height="60" rx="6" fill="url(#doneGrad)" stroke="#2b8a3e" stroke-width="1.5"/>
+  <text x="340" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="#2b8a3e">Repair Requests</text>
+  <text x="340" y="97" text-anchor="middle" font-size="11" fill="#555">WindowIndex × 32 indices</text>
+  <text x="340" y="112" text-anchor="middle" font-size="10" fill="#888">✅ per validator</text>
+
+  <!-- Arrow 2 -->
+  <line x1="420" y1="85" x2="470" y2="85" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Stage 3: Ingest -->
+  <rect x="480" y="55" width="160" height="60" rx="6" fill="url(#doneGrad)" stroke="#2b8a3e" stroke-width="1.5"/>
+  <text x="560" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="#2b8a3e">Shred Ingester</text>
+  <text x="560" y="97" text-anchor="middle" font-size="11" fill="#555">parse + classify shreds</text>
+  <text x="560" y="112" text-anchor="middle" font-size="10" fill="#888">✅ strip nonce</text>
+
+  <!-- Arrow 3 -->
+  <line x1="640" y1="85" x2="690" y2="85" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Stage 4: FEC -->
+  <rect x="700" y="55" width="160" height="60" rx="6" fill="url(#doneGrad)" stroke="#2b8a3e" stroke-width="1.5"/>
+  <text x="780" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="#2b8a3e">FEC Batcher</text>
+  <text x="780" y="97" text-anchor="middle" font-size="11" fill="#555">data + code shreds</text>
+  <text x="780" y="112" text-anchor="middle" font-size="10" fill="#888">✅ slot + fec_set</text>
+
+  <!-- Down arrow to RS -->
+  <line x1="780" y1="115" x2="780" y2="160" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Stage 5: RS Recovery -->
+  <rect x="700" y="170" width="160" height="60" rx="6" fill="url(#doneGrad)" stroke="#2b8a3e" stroke-width="1.5"/>
+  <text x="780" y="193" text-anchor="middle" font-size="13" font-weight="bold" fill="#2b8a3e">RS Recovery</text>
+  <text x="780" y="212" text-anchor="middle" font-size="11" fill="#555">Cauchy matrix decode</text>
+  <text x="780" y="227" text-anchor="middle" font-size="10" fill="#888">✅ GF(2⁸)</text>
+
+  <!-- Down arrow -->
+  <line x1="780" y1="230" x2="780" y2="275" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Stage 6: Deshredder -->
+  <rect x="700" y="285" width="160" height="60" rx="6" fill="url(#doneGrad)" stroke="#2b8a3e" stroke-width="1.5"/>
+  <text x="780" y="308" text-anchor="middle" font-size="13" font-weight="bold" fill="#2b8a3e">Deshredder</text>
+  <text x="780" y="327" text-anchor="middle" font-size="11" fill="#555">concat → Vec&lt;Entry&gt;</text>
+  <text x="780" y="342" text-anchor="middle" font-size="10" fill="#888">✅ flatten txs</text>
+
+  <!-- Down arrow -->
+  <line x1="780" y1="345" x2="780" y2="390" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Stage 7: Merkle + Storage -->
+  <rect x="40" y="400" width="230" height="55" rx="6" fill="url(#doneGrad)" stroke="#2b8a3e" stroke-width="1.5"/>
+  <text x="155" y="424" text-anchor="middle" font-size="13" font-weight="bold" fill="#2b8a3e">Merkle Tree</text>
+  <text x="155" y="443" text-anchor="middle" font-size="11" fill="#555">SHA-256 over each tx</text>
+
+  <rect x="335" y="400" width="230" height="55" rx="6" fill="url(#doneGrad)" stroke="#2b8a3e" stroke-width="1.5"/>
+  <text x="450" y="424" text-anchor="middle" font-size="13" font-weight="bold" fill="#2b8a3e">Ring Buffer</text>
+  <text x="450" y="443" text-anchor="middle" font-size="11" fill="#555">500 slots in-memory</text>
+
+  <rect x="630" y="400" width="230" height="55" rx="6" fill="url(#doneGrad)" stroke="#2b8a3e" stroke-width="1.5"/>
+  <text x="745" y="424" text-anchor="middle" font-size="13" font-weight="bold" fill="#2b8a3e">Flat File Store</text>
+  <text x="745" y="443" text-anchor="middle" font-size="11" fill="#555">/data/slot_{n}.dat</text>
+
+  <!-- Arrows between storage -->
+  <line x1="270" y1="427" x2="325" y2="427" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="565" y1="427" x2="620" y2="427" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Next up -->
+  <rect x="260" y="285" width="380" height="60" rx="6" fill="url(#nextGrad)" stroke="#e67700" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="450" y="310" text-anchor="middle" font-size="13" font-weight="bold" fill="#e67700">⏳ Next: RPC Server</text>
+  <text x="450" y="330" text-anchor="middle" font-size="11" fill="#555">serve Merkle proofs to clients</text>
+
+  <line x1="700" y1="315" x2="690" y2="315" stroke="#e67700" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+
+  <!-- Legend -->
+  <rect x="40" y="475" width="12" height="12" fill="#b2f2bb" stroke="#2b8a3e" stroke-width="1"/>
+  <text x="58" y="486" font-size="11" fill="#555">Built</text>
+  <rect x="120" y="475" width="12" height="12" fill="#ffe066" stroke="#e67700" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="138" y="486" font-size="11" fill="#555">Next</text>
+</svg>

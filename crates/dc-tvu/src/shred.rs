@@ -43,7 +43,12 @@ impl Shred {
                     merkle_proof.push(entry);
                 }
                 let data_off = proof_off + proof_size * 20;
-                let data = bytes.get(data_off..)?.to_vec();
+                let data_end = data_header.size as usize;
+                let data = if data_end > data_off {
+                    bytes.get(data_off..data_end)?.to_vec()
+                } else {
+                    Vec::new() // empty shred slot — no real data
+                };
                 Some(Shred::MerkleData {
                     common_header,
                     data_header,
