@@ -91,7 +91,7 @@ impl FecBatch {
             }
             if let Some(ref bytes) = self.code_shreds[i] {
                 received.push(bytes.clone());
-                row_indices.push(self.num_data + 1);
+                row_indices.push(self.num_data + i);
             }
         }
         reed_solomon::decode(&received, &row_indices, &cauchy, self.num_data)
