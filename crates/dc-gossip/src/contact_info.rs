@@ -1,6 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use solana_sdk::{pubkey::Pubkey, timing::timestamp};
 use solana_serde_varint as serde_varint;
+use solana_version::Version;
 use solana_short_vec as short_vec;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -19,39 +20,6 @@ pub struct SocketEntry {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 enum Extension {}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Version {
-    #[serde(with = "serde_varint")]
-    pub major: u16,
-    #[serde(with = "serde_varint")]
-    pub minor: u16,
-    #[serde(with = "serde_varint")]
-    pub patch: u16,
-    pub commit: u32,
-    pub feature_set: u32,
-    #[serde(with = "serde_varint")]
-    pub client: u16,
-}
-
-impl Version {
-    pub fn display(&self) -> String {
-        format!("{}.{}.{}", self.major, self.minor, self.patch)
-    }
-}
-
-impl Default for Version {
-    fn default() -> Self {
-        Self {
-            major: 2,
-            minor: 0,
-            patch: 0,
-            commit: 0,
-            feature_set: 0,
-            client: 3, // Agave
-        }
-    }
-}
 
 // Agave uses a custom Deserialize: deserialize without cache field,
 // then populate cache from socket entries (cumulative port offsets).
@@ -116,6 +84,82 @@ impl<'de> Deserialize<'de> for ContactInfo {
             extensions: lite.extensions,
             cache,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_version_wire_format() {
+        let v = solana_version::Version::default();
+        let bytes = bincode::serialize(&v).unwrap();
+        // Version wire format: serde_varint major, minor, patch, u32 commit, u32 feature_set, serde_varint client
+        // The first byte should NOT be the fixed major value in LE (which would be like 0x03 for 3)
+        // Instead, serde_varint encodes small values as a single byte (value << 1)
+        // For major=3, that would be 0x06 (single byte varint)
+        eprintln!("Version hex: {:02x?}", bytes);
+        // Compare with LegacyVersion2 format: fixed u16 LE 
+        let lv2 = solana_version::LegacyVersion2::default();
+        let lv2_bytes = bincode::serialize(&lv2).unwrap();
+        eprintln!("LegacyVersion2 hex: {:02x?}", lv2_bytes);
+        assert_ne!(bytes, lv2_bytes, "Version and LegacyVersion2 must serialize differently!");
+        assert!(bytes.len() >= 10, "Version should be at least 10 bytes: {bytes:?}");
+    }
+
+    #[test]
+    fn test_contact_info_serialization() {
+        let pubkey = Pubkey::new_unique();
+        let gossip = "127.0.0.1:8001".parse().unwrap();
+        let ci = ContactInfo::new(pubkey, 1000, gossip, 11016);
+        let bytes = bincode::serialize(&ci).unwrap();
+        assert!(bytes.len() > 32);
+        eprintln!("ContactInfo serialized: {} bytes", bytes.len());
+        let ci2: ContactInfo = bincode::deserialize(&bytes).unwrap();
+        assert_eq!(ci.pubkey, ci2.pubkey);
+        assert_eq!(ci.outset, ci2.outset);
+        assert_eq!(ci.shred_version, ci2.shred_version);
+        assert_eq!(ci.version.major, ci2.version.major);
+    }
+
+    #[cfg(feature = "wincode-tests")]
+    #[test]
+    fn test_wincode_roundtrip_protocol_pull_request() {
+        use crate::crds_filter::CrdsFilter;
+        use crate::crds_data::{CrdsData, CrdsValue};
+        use crate::protocol::Protocol;
+        use solana_sdk::signer::Signer;
+
+        let keypair = solana_sdk::signer::keypair::Keypair::new();
+        let gossip: std::net::SocketAddr = "127.0.0.1:8001".parse().unwrap();
+        let ci = ContactInfo::new(keypair.pubkey(), 1000, gossip, 11016);
+        let cv = CrdsValue::new_contact_info(ci, &keypair);
+        let filter = CrdsFilter::new(512, 0);
+        let protocol = Protocol::PullRequest(filter, cv);
+
+        let bincode_bytes = bincode::serialize(&protocol).unwrap();
+        let wincode_bytes = wincode::serialize(&protocol).unwrap();
+
+        eprintln!("bincode: {} bytes", bincode_bytes.len());
+        eprintln!("wincode: {} bytes", wincode_bytes.len());
+
+        // Check byte-for-byte equality
+        assert_eq!(bincode_bytes, wincode_bytes,
+            "bincode and wincode serialization must match for Protocol::PullRequest!\n\
+             bincode: {:02x?}\nwincode: {:02x?}",
+            bincode_bytes, wincode_bytes);
+
+        // Check cross-deserialization
+        let wincode_decoded: Protocol = wincode::deserialize(&bincode_bytes).unwrap();
+        let wincode_roundtrip = wincode::serialize(&wincode_decoded).unwrap();
+        assert_eq!(bincode_bytes, wincode_roundtrip,
+            "bincode -> wincode deserialize -> wincode serialize must match original");
+
+        let bincode_decoded: Protocol = bincode::deserialize(&wincode_bytes).unwrap();
+        let bincode_roundtrip = bincode::serialize(&bincode_decoded).unwrap();
+        assert_eq!(wincode_bytes, bincode_roundtrip,
+            "wincode -> bincode deserialize -> bincode serialize must match original");
     }
 }
 
@@ -187,7 +231,7 @@ impl ContactInfo {
             self.addrs.first().map(|a| a.to_string()).unwrap_or_default(),
             age_ms,
             self.pubkey,
-            self.version.display(),
+            format!("{}.{}.{}", self.version.major, self.version.minor, self.version.patch),
             self.socket_addr_or_none(0),
             self.socket_addr_or_none(9),
             self.socket_addr_or_none(5),

@@ -14,7 +14,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tracing-appender = "0.2"
 bincode = { workspace = true }
 solana-sdk = "2.1"
 solana-vote-interface = "2.2"
@@ -28,5 +29,4 @@ solana-serde-varint = "3"
 solana-short-vec = "2"
 bv = "0.11.1"
 thiserror = "2.0.18"
-#solana-version = { workspace = true }
-#bv = { workspace = true }
+wincode = { version = "0.5.5", features = ["derive"] }

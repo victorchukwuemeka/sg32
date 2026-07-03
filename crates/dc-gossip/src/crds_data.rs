@@ -265,6 +265,18 @@ impl CrdsValue {
         }
     }
 
+    pub fn new_legacy_contact_info(info: LegacyContactInfo, keypair: &Keypair) -> Self {
+        let data = CrdsData::LegacyContactInfo(info);
+        let bytes = bincode::serialize(&data).unwrap();
+        let signature = keypair.sign_message(&bytes);
+        let hash = solana_sdk::hash::hash(&bytes);
+        Self {
+            signature,
+            data,
+            hash,
+        }
+    }
+
     pub fn pubkey(&self) -> Pubkey {
         match &self.data {
             CrdsData::LegacyContactInfo(contact_info) => *contact_info.pubkey(),

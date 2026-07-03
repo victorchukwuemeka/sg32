@@ -87,12 +87,26 @@ pub async fn run_gossip_loop(
         eprintln!("[GOSSIP] WARNING: no Pong after 10 attempts, continuing anyway");
     }
     // ── Initial pull request ──
+    use solana_sdk::signature::Signable;
     let contact_info = ContactInfo::new(node.pubkey(), timestamp(), gossip_addr, DEVNET_SHRED_VERSION);
     let initial_pull = create_pull_request_message(contact_info, &node.keypair)?;
+    if let Ok(Protocol::PullRequest(filter, caller)) = Protocol::decode_from(&initial_pull) {
+        eprintln!("[GOSSIP] mask_bits={} keys={} sig_ok={} wallclock={}", filter.mask_bits(), filter.filter.keys.len(), caller.verify(), caller.wallclock());
+    }
     eprintln!("[GOSSIP] sending PullRequest ({} bytes) to {entrypoint}", initial_pull.len());
     transport.send(&initial_pull, &entrypoint).await?;
-    eprintln!("[GOSSIP] PullRequest sent, entering main loop");
-    // ── Main loop ──
+    eprintln!("[GOSSIP] PullRequest sent, waiting 15s for response...");
+    for i in 1..=15 {
+        match tokio::time::timeout(Duration::from_secs(1), transport.recv()).await {
+            Ok(Ok((bytes, sender))) => {
+                let tag = u32::from_le_bytes(bytes[..4].try_into().unwrap_or([0xff; 4]));
+                eprintln!("[GOSSIP] initial-wait recv {} bytes from {} (tag={})", bytes.len(), sender, tag);
+            }
+            Ok(Err(e)) => eprintln!("[GOSSIP] initial-wait recv error: {e}"),
+            Err(_) => eprintln!("[GOSSIP] initial-wait tick {i}/15"),
+        }
+    }
+    eprintln!("[GOSSIP] done waiting, entering main loop");
     let mut crds_table = crds::CrdsTable::new();
     let (gossip_tx, _gossip_rx) = emitter::create_channel();
     let mut known_peers: HashSet<SocketAddr> = HashSet::new();
@@ -102,7 +116,17 @@ pub async fn run_gossip_loop(
     loop {
         tokio::select! {
             result = transport.recv() => {
-                if let Ok((bytes, sender)) = result {
+                let (bytes, sender) = match result {
+                    Ok(v) => {
+                        let hex_prefix = v.0.iter().take(16).map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(" ");
+                        eprintln!("[GOSSIP] raw recv {} bytes from {} hex=[{}]", v.0.len(), v.1, hex_prefix);
+                        v
+                    }
+                    Err(e) => {
+                        eprintln!("[GOSSIP] recv error: {e}");
+                        continue;
+                    }
+                };
                     match Protocol::decode_from(&bytes) {
                         Ok(msg) => {
                             match msg {
@@ -126,17 +150,20 @@ pub async fn run_gossip_loop(
                         }
                     }
                 }
-            }
-            _ = sleep(Duration::from_millis(500)) => {
-                if last_pull.elapsed() >= Duration::from_secs(5) {
+                _ = sleep(Duration::from_millis(500)) => {
+                if last_pull.elapsed() >= Duration::from_secs(30) {
                     if known_peers.is_empty() {
                         known_peers.insert(entrypoint);
                     }
                     let contact_info = ContactInfo::new(node.pubkey(), timestamp(), gossip_addr, DEVNET_SHRED_VERSION);
                     if let Ok(bytes) = create_pull_request_message(contact_info, &node.keypair) {
+                        eprintln!("[GOSSIP] PullRequest size={}", bytes.len());
                         for peer in known_peers.iter() {
+                            eprintln!("[GOSSIP] sending PullRequest to {peer}");
                             let _ = transport.send(&bytes, peer).await;
                         }
+                    } else {
+                        eprintln!("[GOSSIP] Failed to create PullRequest");
                     }
                     last_pull = Instant::now();
                 }

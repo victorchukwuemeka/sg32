@@ -1,16 +1,18 @@
 # dc-gossip design
 
 > Target network: Solana devnet  
-> Emission: `tokio::sync::broadcast` channel  
 > Transport: async tokio UDP  
+> On-wire format: bincode + short_vec + serde_varint (wincode-compatible)  
+> Library entry: `lib.rs` `run_gossip_loop()`  
+> Standalone binary: `main.rs`  
 
 ---
 
 ## What this module does
 
-`dc-gossip` connects to the Solana devnet gossip network, speaks the
-real Solana gossip wire protocol, and emits structured events that other
-crates (`dc-tvu`, `dc-cli`, `dc-ledger`) subscribe to.
+`dc-gossip` connects to the Solana devnet gossip network, communicates
+using the real Solana gossip wire protocol, and emits structured events
+that other crates (`dc-tvu`, `dc-cli`, `dc-ledger`) subscribe to.
 
 It is not a full validator. It does not vote. It does not produce blocks.
 It listens, merges state, and tells the rest of the system what it learned.
@@ -21,197 +23,259 @@ It listens, merges state, and tells the rest of the system what it learned.
 
 ```
 crates/dc-gossip/src/
-├── main.rs        — entry point, wires all modules, starts the loop
-├── lib.rs         — public API, re-exports GossipEvent and Emitter
-├── types.rs       — all shared data types
-├── transport.rs   — raw UDP socket, send/receive bytes
-├── protocol.rs    — deserialize bytes into typed Protocol messages
-├── handler.rs     — route Push/Pull/Ping to correct logic
-├── crds.rs        — CRDS table: merge, dedup, extract peer info
-└── emitter.rs     — broadcast channel, GossipEvent enum
-```
-
-One file, one job. No file knows more than it needs to.
-
----
-
-## Data flow — step by step
-
-```
-devnet entrypoint
-      │  UDP packet (raw bytes)
-      ▼
-transport.rs          — recv_from() → (Vec<u8>, SocketAddr)
-      │
-      ▼
-protocol.rs           — bincode::deserialize → Protocol enum
-      │
-      ├─ Push  ──► handler.rs → merge CRDS entries
-      ├─ Pull  ──► handler.rs → respond with our state
-      └─ Ping  ──► handler.rs → reply with Pong
-                        │
-                        ▼
-                    crds.rs   — dedup by version, update peer table
-                        │
-                        ▼
-                   emitter.rs — tx.send(GossipEvent) → subscribers
-```
-
-This cycle runs every 1 second. The gossip round also pushes our own
-state to random peers (fanout = 3 by default).
-
----
-
-## Types — types.rs
-
-```rust
-/// A validator we discovered on the network
-pub struct ValidatorInfo {
-    pub id: Pubkey,               // validator identity key
-    pub gossip_addr: SocketAddr,  // their gossip port
-    pub tvu_addr: SocketAddr,     // where to receive shreds from them
-    pub tpu_addr: SocketAddr,     // where to send transactions to them
-    pub last_seen: u64,           // unix timestamp
-    pub version: u64,             // CRDS version, used for dedup
-}
-
-/// A slot announcement from the network
-pub struct SlotInfo {
-    pub slot: u64,
-    pub parent: u64,
-    pub root: u64,
-    pub validator_id: Pubkey,
-}
-
-/// Cluster health snapshot
-pub struct ClusterHealth {
-    pub active_validators: usize,
-    pub latest_slot: u64,
-}
+├── gossip_design.md       — this file
+├── lib.rs                 — public API: run_gossip_loop()
+├── main.rs                — standalone binary with full gossip loop
+│
+├── contact_info.rs        — ContactInfo struct, wire serialization
+├── crds_data.rs           — CrdsData enum, CrdsValue, Signable impl
+├── crds_filter.rs         — CrdsFilter (bloom filter + mask bits)
+├── crds.rs                — CRDS table: merge, dedup, peer extraction
+├── emitter.rs             — channel types for decoupled event dispatch
+├── handler.rs             — routes incoming Protocol variants to logic
+├── keypair.rs             — key generation helpers
+├── legacy_contact_info.rs — deprecated format, read-only
+├── ping_pong.rs           — Ping + Pong + signature verification
+├── protocol.rs            — Protocol enum, encode/decode
+├── pull_request.rs        — build a PullRequest that fits in one UDP packet
+├── transport.rs           — async UDP bind/send/recv
+│
+├── types.rs               — ValidatorInfo, SlotInfo, ClusterHealth
+├── ip_echo.rs             — not yet wired
+├── short_vec.rs           — manual ShortU16 encode/decode helpers
+└── playground.rs          — scratch file, not part of the crate
 ```
 
 ---
 
-## Protocol — protocol.rs
+## On-wire format
 
-Solana gossip uses `bincode` serialization. Messages map to:
+Solana's gossip protocol uses `wincode` on the serving side, but our
+`bincode` + custom annotations produce identical bytes:
 
-```rust
-pub enum Protocol {
-    PullRequest(CrdsFilter, CrdsValue),
-    PullResponse(Pubkey, Vec<CrdsValue>),
-    PushMessage(Pubkey, Vec<CrdsValue>),
-    PruneMessage(Pubkey, PruneData),
-    PingMessage(Ping),
-    PongMessage(Pong),
-}
+| Annotation | Effect | Wincode equivalent |
+|---|---|---|
+| `#[serde(with = "short_vec")]` | `Vec` length = 1–3 byte ShortU16 | `ShortU16` len encoding |
+| `#[serde(with = "serde_varint")]` | Integer = LEB128 varint | `Leb128Int<u64>` |
+| `#[serde(skip_serializing)]` | Field omitted on wire | `#[wincode(skip)]` |
+
+Enum tags, fixed-width integers (`u16`, `u32`, `u64`), and byte arrays
+(`Pubkey` = 32 B, `Signature` = 64 B) are identical in both.
+
+Result: **every byte we send is exactly what Agave (Solana's validator
+client) expects**.
+
+---
+
+## Bootstrap sequence
+
+```
+  ┌─ us ──┐                              ┌─ devnet entrypoint ──┐
+  │       │  1. PingMessage ────────────► │                      │
+  │       │  2. ◄──────────────────── Pong │                      │
+  │       │                                │  (now in ping cache) │
+  │       │  3. PullRequest ─────────────► │                      │
+  │       │                                │  check shred_ver ✓  │
+  │       │                                │  sanitize ✓          │
+  │       │                                │  verify sig ✓        │
+  │       │  4. ◄────── Ping (cache miss) │                      │
+  │       │  5. Pong ────────────────────► │  (now verified)      │
+  │       │                                │                      │
+  │       │  6. PullRequest (5s later) ──► │  ping cache hit ✓    │
+  │       │  7. ◄──────── PullResponse ── │                      │
+  │       │                                │                      │
 ```
 
-We handle: `PushMessage`, `PullResponse`, `PingMessage`.
-We send: `PullRequest` (to discover peers), `PongMessage` (reply to pings).
+1. **Ping/Pong** — prove we are reachable at our UDP address. The
+   entrypoint stores us in its `ping_cache`. Without this step,
+   PullRequests are silently discarded (entrypoint: "who are you? I
+   have never pinged you").
+2. **PullRequest** — send a `CrdsFilter` (bloom filter) describing what
+   we already know, plus our own `ContactInfo` (signed). The entrypoint
+   responds with entries our bloom filter does **not** contain.
+3. **Ping (from entrypoint)** — first PullRequest always misses the
+   ping cache. The entrypoint sends a Ping; we reply with Pong. This
+   caches our address for future PullRequests.
+4. **Next PullRequest** — hits the ping cache, gets a `PullResponse`.
+
+**Critical constants**:
+- `DEVNET_SHRED_VERSION` = `7016` (devnet, NOT 11016 — that's mainnet)
+- `PACKET_DATA_SIZE` = `1232` (UDP MTU-safe payload max)
+
+---
+
+## PullRequest construction
+
+```
+pull_request.rs
+     │
+     ├─ 1. Build CrdsValue::ContactInfo (sign with our keypair)
+     │     data = CrdsData::ContactInfo(ci)
+     │     sig  = keypair.sign(wincode_serialize(data))
+     │
+     ├─ 2. Measure caller serialized size
+     │     caller_size = serialized_size(CrdsValue)
+     │
+     ├─ 3. Compute bloom budget
+     │     available = PACKET_DATA_SIZE - 4(enum tag) - caller_size
+     │     bloom_max_bytes = cache[available]  (precomputed)
+     │
+     ├─ 4. Create CrdsFilter with that budget & min 65536 items
+     │     mask_bits = ceil(log2(65536 / max_items(bloom_bits)))
+     │     filter = Bloom::random(max_items, false_rate=0.1, bloom_bits)
+     │
+     └─ 5. Serialize Protocol::PullRequest(filter, crds_value)
+           → fits in 1232 bytes
+```
+
+The bloom filter is **empty** (no entries pre-inserted). The entrypoint
+will send us everything whose hash prefix matches our `mask` — we get
+all values by requesting a broad hash-space slice and inserting nothing
+into the bloom.
+
+---
+
+## Data flow — receive path
+
+```
+UDP socket
+     │
+     ▼
+transport.recv() → (Vec<u8>, SocketAddr)
+     │
+     ▼
+Protocol::decode_from(bytes) → Protocol enum
+     │
+     ├── PushMessage(pk, values) ──┐
+     ├── PullResponse(pk, values) ─┤──► handler::handle()
+     ├── PingMessage(ping) ────────┘       │
+     ├── PongMessage(_)                    ├── crds::merge(value) → dedup by wallclock
+     └── PruneMessage(pk, _)              ├── extract gossip addrs → new_peers
+                                           └── drain_events() → tx.send(event)
+```
+
+- `PushMessage` / `PullResponse` → merge `CrdsValue`s into the table
+- `PingMessage` → reply with `PongMessage`
+- `PongMessage` / `PruneMessage` → logged (no action yet)
+
+---
+
+## Data flow — transmit path (gossip loop)
+
+Every **5 seconds** (configurable in `main.rs`):
+```
+1. Build ContactInfo (current wallclock, public IP, shred_version)
+2. Build PullRequest (bloom filter sized to 1232 bytes)
+3. Send to known_peers (all discovered gossip addresses)
+```
+
+Every **30 seconds**:
+```
+1. crds_table.prune() — remove stale entries
+2. tx.send(ci) — emit ContactInfos to subscribers
+3. update known_peers from CRDS table
+```
 
 ---
 
 ## CRDS table — crds.rs
 
-CRDS = Conflict-free Replicated Data Structure.
-
-Rules:
-- Every entry has a `version` (unix timestamp from the sender)
-- On merge: keep the entry with the **higher version**
-- Entries older than 15 minutes are pruned
-- On update: extract `ValidatorInfo` and emit a `GossipEvent`
+```
+Merge rule: higher wallclock wins
+Prune: entries with wallclock older than 15 min
+Index: by Pubkey (one entry per validator)
+Events: drain_events() returns gossip events from last mutation
+```
 
 ```rust
-pub struct CrdsTable {
-    entries: HashMap<Pubkey, CrdsEntry>,
-}
-
+// Actual signatures (not the design doc's stale mock):
 impl CrdsTable {
-    pub fn merge(&mut self, incoming: Vec<CrdsValue>) -> Vec<GossipEvent>
-    pub fn prune_stale(&mut self)
-    pub fn get_peers(&self) -> Vec<ValidatorInfo>
+    pub fn new() -> Self
+    pub fn merge(&mut self, value: CrdsValue) -> bool
+    pub fn len(&self) -> usize
+    pub fn prune(&mut self)
+    pub fn get_contact_infos(&self) -> Vec<(Pubkey, SocketAddr)>
+    pub fn all_contact_infos(&self) -> Vec<(Pubkey, ContactInfo)>
+    pub fn get_highest_slot(&self) -> Option<Slot>
+    pub fn drain_events(&mut self) -> Vec<GossipEvent>
 }
 ```
 
 ---
 
-## Emitter — emitter.rs
+## Wire types — byte layout
 
-```rust
-pub enum GossipEvent {
-    NewValidator(ValidatorInfo),   // first time we see a validator
-    ValidatorUpdated(ValidatorInfo), // their data changed
-    SlotUpdate(SlotInfo),          // new slot announced
-    PeerLeft(Pubkey),              // validator went stale
-    ClusterHealth(ClusterHealth),  // periodic health snapshot
-}
+### Protocol enum tag
 
-// channel capacity: 1000 events
-pub type GossipTx = broadcast::Sender<GossipEvent>;
-pub type GossipRx = broadcast::Receiver<GossipEvent>;
+`Protocol` has 7 variants (tag 0–6, bincode u32 LE):
+
+| Tag | Variant |
+|-----|---------|
+| 0   | PullRequest(CrdsFilter, CrdsValue) |
+| 1   | PullResponse(Pubkey, Vec\<CrdsValue\>) |
+| 2   | PushMessage(Pubkey, Vec\<CrdsValue\>) |
+| 3   | PruneMessage(Pubkey, PruneData) |
+| 4   | PingMessage(Ping) |
+| 5   | PongMessage(Pong) |
+| 6   | Unknown |
+
+### ContactInfo (72 bytes with 1 addr + 1 socket)
+
+```
+pubkey        [u8; 32]         32 B
+wallclock     serde_varint      3–9 B
+outset        u64 LE            8 B
+shred_version u16 LE            2 B
+version       Version          12 B  (see below)
+addrs         short_vec[IpAddr] 1 + N*8 B  (ShortU16 len + IpAddr elements)
+sockets       short_vec[...]    1 + N*4 B
+extensions    short_vec[Ext]    1 B (empty)
+cache         #[serde(skip)]    0 B
 ```
 
-Other crates subscribe like this:
+### Version (12 bytes)
 
-```rust
-// in dc-tvu
-let mut rx = gossip_tx.subscribe();
-while let Ok(event) = rx.recv().await {
-    match event {
-        GossipEvent::NewValidator(v) => {
-            // connect to v.tvu_addr and start receiving shreds
-        }
-        _ => {}
-    }
-}
 ```
+major         LEB128 varint    1 B
+minor         LEB128 varint    1 B
+patch         LEB128 varint    1 B
+commit        u32 LE            4 B
+feature_set   u32 LE            4 B
+client        LEB128 varint    1 B
+```
+
+### Ping (132 bytes) / Pong (100 bytes)
+
+```
+Ping:  pubkey[32] + token[32] + signature[64] = 128 B + 4 B tag = 132 B
+Pong:  pubkey[32] + hash[32]  + signature[64] = 128 B + 4 B tag = 132 B
+```
+
+### CrdsData enum tag
+
+`CrdsData` has 14 variants (bincode u32 LE). The only one we
+produce/consume:
+
+| Tag | Variant |
+|-----|---------|
+| 11  | ContactInfo(ContactInfo) |
 
 ---
 
-## Transport — transport.rs
+## Key files — what each one does
 
-```rust
-pub struct Transport {
-    socket: UdpSocket,  // tokio async UdpSocket
-}
-
-impl Transport {
-    pub async fn new(bind_addr: &str) -> Result<Self>
-    pub async fn send(&self, msg: &[u8], to: &SocketAddr) -> Result<()>
-    pub async fn recv(&self) -> Result<(Vec<u8>, SocketAddr)>
-}
-```
-
-Uses `tokio::net::UdpSocket`. Non-blocking. WouldBlock is handled by
-the async runtime — no manual loop needed.
-
----
-
-## Devnet entrypoint
-
-```
-entrypoint.devnet.solana.com:8001
-```
-
-Bootstrap sequence:
-1. Send a `PullRequest` to the entrypoint with an empty CRDS filter
-2. Receive `PullResponse` containing a list of validators
-3. Add those validators to our peer table
-4. Begin the gossip loop — push to 3 random peers every second
-
----
-
-## Gossip loop — main.rs
-
-```
-loop every 1s:
-  1. receive_messages()     — drain the UDP socket
-  2. process_messages()     — decode + handle each one
-  3. gossip_round()         — pick 3 random peers, push our state
-  4. prune_stale()          — remove peers not seen in 15 min
-  5. emit ClusterHealth()   — broadcast current snapshot
-```
+| File | Responsibility |
+|---|---|
+| `contact_info.rs` | `ContactInfo` struct + `SocketEntry`, field-level serde annotations |
+| `crds_data.rs` | `CrdsData` enum (14 variants), `CrdsValue`, signing/verification |
+| `crds_filter.rs` | `CrdsFilter` with bloom + mask, mask_bits calculation |
+| `crds.rs` | `CrdsTable` — indexed CRDS state, merge by wallclock, prune stale |
+| `pull_request.rs` | Builds a full `Protocol::PullRequest` fitting in 1232 B |
+| `ping_pong.rs` | `Ping<N>`, `Pong`, sign and verify |
+| `handler.rs` | Matches incoming `Protocol` variants, dispatches to CRDS / reply |
+| `protocol.rs` | `Protocol` enum definition + `encode_to()`/`decode_from()` |
+| `transport.rs` | Async UDP wrapper (tokio) |
+| `keypair.rs` | Key generation |
 
 ---
 
@@ -219,20 +283,28 @@ loop every 1s:
 
 - Does not vote
 - Does not produce or validate blocks
-- Does not implement the full CRDS filter (bloom filter optimization)
+- Does not push its own state to peers (pull-only at the moment)
 - Does not handle shreds (that is dc-tvu's job)
+- Does not implement the full CRDS shard scan for PullResponses
+  (relies on the entrypoint to send us everything)
 
-These are intentional limits. dc-gossip's job is to know who is on the
-network and what slot they are on. Nothing more.
+These are intentional limits. dc-gossip's job is to discover peers,
+learn their addresses, and track what slot they are on.
 
 ---
 
-## Files to write next (in order)
+## Debugging notes
 
-1. `types.rs` — no dependencies, write first
-2. `transport.rs` — depends on types
-3. `protocol.rs` — depends on types
-4. `crds.rs` — depends on types
-5. `emitter.rs` — depends on types
-6. `handler.rs` — depends on crds + emitter
-7. `main.rs` — wires everything together
+**Why did PullRequests silently fail before the fix?**
+1. Wrong `shred_version` (11016 → 7016) — Agave's
+   `check_pull_request_shred_version()` rejects the PullRequest before
+   any response is generated. Ping/Pong bypass this check, so the
+   handshake worked but data exchange did not.
+
+**How to verify wire compatibility**
+1. Run `cargo run -- --self-test` — validates round-trip serialization
+   and signature verification.
+2. Check `mask_bits >= MIN_PULL_REQUEST_MASK_BITS` (6 in Agave v4.x
+   release builds). Our code produces `mask_bits = 6` (correct).
+3. Check bloom `contains()` returns `false` for an empty filter
+   (otherwise every value is filtered out).

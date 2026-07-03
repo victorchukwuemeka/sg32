@@ -66,16 +66,18 @@ pub fn create_pull_request_message(
         return Err(PullRequestErrorMessages::NoSocketEntry);
     }
 
-    // Build the caller's CrdsValue wrapping the real ContactInfo, not LegacyContactInfo.
-    //
-    // WHY THIS MATTERS (issue #2):
-    //   Agave's Sanitize impl for PullRequest rejects anything that isn't CrdsData::ContactInfo:
-    //     Protocol::PullRequest(filter, val) => match val.data() {
-    //         CrdsData::ContactInfo(_) => val.sanitize(),
-    //         _ => Err(SanitizeError::InvalidValue),
-    //     }
-    //   Using LegacyContactInfo here means the network would drop our pull requests.
+    // Must use modern ContactInfo (CrdsData::ContactInfo, variant 11) for PullRequest.
+    // Agave's Protocol::sanitize rejects LegacyContactInfo (variant 0) via
+    // its Deprecated wrapper, causing silent deserialization failure.
     let signed_info = CrdsValue::new_contact_info(contact_info, keypair);
+
+    // Debug: print the exact bytes the signature was computed over
+    let data_bytes = bincode::serialize(&signed_info.data).unwrap();
+    eprintln!(
+        "[CRDS_SIGNED] {} bytes: {}",
+        data_bytes.len(),
+        data_bytes.iter().map(|b| format!("{b:02x}")).collect::<Vec<_>>().join(" ")
+    );
 
     // 1) Measure the caller's serialized size.
     //    This determines exactly how much room remains for the CrdsFilter.
@@ -89,6 +91,19 @@ pub fn create_pull_request_message(
 
     // 3) Create the CrdsFilter with the exact bloom budget
     let filter = CrdsFilter::new(bloom_max_bytes, /*num_items=*/ 0);
+
+    // Debug: verify the bloom we're sending
+    let actual_keys = filter.filter.keys.len();
+    let sample = solana_sdk::hash::Hash::new_from_array([0xabu8; 32]);
+    let contains = filter.filter.contains(&sample);
+    let wire_size = bincode::serialized_size(&Protocol::PullRequest(filter.clone(), signed_info.clone())).unwrap_or(0);
+    eprintln!(
+        "[PULL_REQ] bloom_max_bytes={} mask_bits={} keys={} contains_sample={} caller_size={} wire_size={}",
+        bloom_max_bytes, filter.mask_bits(), actual_keys, contains, caller_size, wire_size
+    );
+    if contains {
+        eprintln!("[PULL_REQ] CRITICAL: empty bloom says contains=true! ALL values will be filtered out!");
+    }
 
     // 4) Encode the pull request — guaranteed to fit in one packet
     Protocol::PullRequest(filter, signed_info)
