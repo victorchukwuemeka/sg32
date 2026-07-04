@@ -354,3 +354,197 @@ impl Signable for CrdsValue {
             .verify(self.pubkey().as_ref(), self.signable_data().borrow())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::contact_info::ContactInfo;
+    use crate::legacy_contact_info::LegacyContactInfo;
+    use bincode::{deserialize, serialize};
+    use std::net::SocketAddr;
+
+    fn pk() -> Pubkey {
+        Pubkey::new_from_array([42u8; 32])
+    }
+
+    #[test]
+    fn roundtrip_contact_info() {
+        let ci = ContactInfo::new(pk(), 1000, "127.0.0.1:8001".parse().unwrap(), 7016);
+        let data = CrdsData::ContactInfo(ci.clone());
+        let bytes = serialize(&data).unwrap();
+        let data2: CrdsData = deserialize(&bytes).unwrap();
+        match data2 {
+            CrdsData::ContactInfo(ci2) => {
+                assert_eq!(*ci2.pubkey(), *ci.pubkey());
+                assert_eq!(ci2.wallclock, ci.wallclock);
+            }
+            _ => panic!("expected ContactInfo"),
+        }
+    }
+
+    #[test]
+    fn roundtrip_legacy_contact_info() {
+        let gossip: SocketAddr = "127.0.0.1:8001".parse().unwrap();
+        let lci = LegacyContactInfo {
+            id: pk(),
+            gossip,
+            tvu: "0.0.0.0:0".parse().unwrap(),
+            tvu_quic: "0.0.0.0:0".parse().unwrap(),
+            serve_repair_quic: "0.0.0.0:0".parse().unwrap(),
+            tpu: "0.0.0.0:0".parse().unwrap(),
+            tpu_forwards: "0.0.0.0:0".parse().unwrap(),
+            tpu_vote: "0.0.0.0:0".parse().unwrap(),
+            rpc: "0.0.0.0:0".parse().unwrap(),
+            rpc_pubsub: "0.0.0.0:0".parse().unwrap(),
+            wallclock: 1000,
+            shred_version: 7016,
+        };
+        let data = CrdsData::LegacyContactInfo(lci);
+        let bytes = serialize(&data).unwrap();
+        let data2: CrdsData = deserialize(&bytes).unwrap();
+        match data2 {
+            CrdsData::LegacyContactInfo(lci2) => assert_eq!(lci2.id, pk()),
+            _ => panic!("expected LegacyContactInfo"),
+        }
+    }
+
+    #[test]
+    fn roundtrip_node_instance() {
+        let node = NodeInstance { pubkey: pk(), wallclock: 1000, timestamp: 500, token: 99 };
+        let data = CrdsData::NodeInstance(node);
+        let bytes = serialize(&data).unwrap();
+        let data2: CrdsData = deserialize(&bytes).unwrap();
+        match data2 {
+            CrdsData::NodeInstance(n) => {
+                assert_eq!(n.pubkey, pk());
+                assert_eq!(n.wallclock, 1000);
+                assert_eq!(n.token, 99);
+            }
+            _ => panic!("expected NodeInstance"),
+        }
+    }
+
+    #[test]
+    fn roundtrip_version() {
+        let v = Version { pubkey: pk(), wallclock: 1000, version: solana_version::LegacyVersion2::default() };
+        let data = CrdsData::Version(v);
+        let bytes = serialize(&data).unwrap();
+        let _: CrdsData = deserialize(&bytes).unwrap();
+    }
+
+    #[test]
+    fn roundtrip_legacy_version() {
+        // Use serde to construct a default LegacyVersion1 via deserialization
+        let default_bytes = bincode::serialize(&solana_version::LegacyVersion2::default()).unwrap();
+        let version: solana_version::LegacyVersion1 = bincode::deserialize(&default_bytes).unwrap();
+        let lv = LegacyVersion { pubkey: pk(), wallclock: 1000, version };
+        let data = CrdsData::LegacyVersion(lv);
+        let bytes = serialize(&data).unwrap();
+        let _: CrdsData = deserialize(&bytes).unwrap();
+    }
+
+    #[test]
+    fn roundtrip_epoch_slots() {
+        let slots = vec![
+            CompressedSlot::Uncompressed(Uncompressed {
+                first_slot: 10,
+                num: 5,
+                slots: BitVec::new(),
+            }),
+        ];
+        let es = EpochSlots { from: pk(), slots, wallclock: 1000 };
+        let data = CrdsData::EpochSlots(0, es);
+        let bytes = serialize(&data).unwrap();
+        let data2: CrdsData = deserialize(&bytes).unwrap();
+        match data2 {
+            CrdsData::EpochSlots(idx, _) => assert_eq!(idx, 0),
+            _ => panic!("expected EpochSlots"),
+        }
+    }
+
+    #[test]
+    fn roundtrip_accounts_hashes() {
+        let ah = AccountsHashes { from: pk(), hashes: vec![(100, Hash::default())], wallclock: 1000 };
+        let data = CrdsData::AccountsHashes(ah);
+        let bytes = serialize(&data).unwrap();
+        let _: CrdsData = deserialize(&bytes).unwrap();
+    }
+
+    #[test]
+    fn roundtrip_legacy_snapshot_hashes() {
+        let lsh = AccountsHashes { from: pk(), hashes: vec![], wallclock: 1000 };
+        let data = CrdsData::LegacySnapshotHashes(lsh);
+        let bytes = serialize(&data).unwrap();
+        let _: CrdsData = deserialize(&bytes).unwrap();
+    }
+
+    #[test]
+    fn roundtrip_snapshot_hashes() {
+        let sh = SnapshotHashes {
+            from: pk(),
+            full: (100, Hash::default()),
+            incremental: vec![(50, Hash::default())],
+            wallclock: 1000,
+        };
+        let data = CrdsData::SnapshotHashes(sh);
+        let bytes = serialize(&data).unwrap();
+        let _: CrdsData = deserialize(&bytes).unwrap();
+    }
+
+    #[test]
+    fn roundtrip_restart_heaviest_fork() {
+        let fork = RestartHeaviestFork {
+            from: pk(),
+            wallclock: 1000,
+            last_slot: 42,
+            last_slot_hash: Hash::default(),
+            observed_stake: 100_000,
+            shred_version: 7016,
+        };
+        let data = CrdsData::RestartHeaviestFork(fork);
+        let bytes = serialize(&data).unwrap();
+        let data2: CrdsData = deserialize(&bytes).unwrap();
+        match data2 {
+            CrdsData::RestartHeaviestFork(f) => {
+                assert_eq!(f.from, pk());
+                assert_eq!(f.last_slot, 42);
+            }
+            _ => panic!("expected RestartHeaviestFork"),
+        }
+    }
+
+    #[test]
+    fn crds_value_pubkey_contact_info() {
+        let ci = ContactInfo::new(pk(), 1000, "127.0.0.1:8001".parse().unwrap(), 7016);
+        let val = CrdsValue::unsigned_new_data(CrdsData::ContactInfo(ci));
+        assert_eq!(val.pubkey(), pk());
+    }
+
+    #[test]
+    fn crds_value_pubkey_legacy_contact() {
+        let lci = LegacyContactInfo {
+            id: pk(), gossip: "127.0.0.1:8001".parse().unwrap(),
+            tvu: "0.0.0.0:0".parse().unwrap(), tvu_quic: "0.0.0.0:0".parse().unwrap(),
+            serve_repair_quic: "0.0.0.0:0".parse().unwrap(), tpu: "0.0.0.0:0".parse().unwrap(),
+            tpu_forwards: "0.0.0.0:0".parse().unwrap(), tpu_vote: "0.0.0.0:0".parse().unwrap(),
+            rpc: "0.0.0.0:0".parse().unwrap(), rpc_pubsub: "0.0.0.0:0".parse().unwrap(),
+            wallclock: 1000, shred_version: 7016,
+        };
+        let val = CrdsValue::unsigned_new_data(CrdsData::LegacyContactInfo(lci));
+        assert_eq!(val.pubkey(), pk());
+    }
+
+    #[test]
+    fn crds_value_wallclock() {
+        let ci = ContactInfo::new(pk(), 7777, "127.0.0.1:8001".parse().unwrap(), 7016);
+        let val = CrdsValue::unsigned_new_data(CrdsData::ContactInfo(ci));
+        assert_eq!(val.wallclock(), 7777);
+    }
+
+    #[test]
+    fn crds_value_wallclock_node_instance() {
+        let node = NodeInstance { pubkey: pk(), wallclock: 8888, timestamp: 0, token: 0 };
+        let val = CrdsValue::unsigned_new_data(CrdsData::NodeInstance(node));
+        assert_eq!(val.wallclock(), 8888);
+    }
+}

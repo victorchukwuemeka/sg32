@@ -1,7 +1,7 @@
 use crate::types::{SlotInfo, ValidatorInfo};
 use tokio::sync::broadcast;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum GossipEvent {
     NewValidators(ValidatorInfo),
     ValidatorUpdate(ValidatorInfo),

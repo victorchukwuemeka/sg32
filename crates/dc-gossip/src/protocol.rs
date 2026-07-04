@@ -117,3 +117,135 @@ impl Protocol {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::contact_info::ContactInfo;
+    use crate::crds_data::CrdsData;
+    use solana_sdk::pubkey::Pubkey;
+    use solana_sdk::signer::keypair::Keypair;
+    use std::net::SocketAddr;
+
+    fn test_pubkey() -> Pubkey {
+        Pubkey::new_from_array([8u8; 32])
+    }
+
+    fn test_contact_value(wallclock: u64, port: u16) -> CrdsValue {
+        let addr: SocketAddr = format!("127.0.0.1:{port}").parse().unwrap();
+        let ci = ContactInfo::new(Pubkey::new_unique(), wallclock, addr, 7016);
+        CrdsValue::unsigned_new_data(CrdsData::ContactInfo(ci))
+    }
+
+    fn test_crds_filter() -> CrdsFilter {
+        CrdsFilter::new(512, 0)
+    }
+
+    #[test]
+    fn roundtrip_pull_request() {
+        let msg = Protocol::PullRequest(test_crds_filter(), test_contact_value(1000, 8001));
+        let bytes = msg.encode_to().unwrap();
+        let decoded = Protocol::decode_from(&bytes).unwrap();
+        assert!(matches!(decoded, Protocol::PullRequest(_, _)));
+    }
+
+    #[test]
+    fn roundtrip_pull_response() {
+        let msg = Protocol::PullResponse(
+            test_pubkey(),
+            vec![test_contact_value(1000, 8001), test_contact_value(2000, 8002)],
+        );
+        let bytes = msg.encode_to().unwrap();
+        let decoded = Protocol::decode_from(&bytes).unwrap();
+        match decoded {
+            Protocol::PullResponse(pk, vals) => {
+                assert_eq!(pk, test_pubkey());
+                assert_eq!(vals.len(), 2);
+            }
+            _ => panic!("expected PullResponse"),
+        }
+    }
+
+    #[test]
+    fn roundtrip_push_message() {
+        let msg = Protocol::PushMessage(
+            test_pubkey(),
+            vec![test_contact_value(1000, 8001)],
+        );
+        let bytes = msg.encode_to().unwrap();
+        let decoded = Protocol::decode_from(&bytes).unwrap();
+        match decoded {
+            Protocol::PushMessage(pk, vals) => {
+                assert_eq!(pk, test_pubkey());
+                assert_eq!(vals.len(), 1);
+            }
+            _ => panic!("expected PushMessage"),
+        }
+    }
+
+    #[test]
+    fn roundtrip_ping_message() {
+        let keypair = Keypair::new();
+        let ping = Ping::new(&keypair).unwrap();
+        let msg = Protocol::PingMessage(ping);
+        let bytes = msg.encode_to().unwrap();
+        let decoded = Protocol::decode_from(&bytes).unwrap();
+        assert!(matches!(decoded, Protocol::PingMessage(_)));
+    }
+
+    #[test]
+    fn roundtrip_pong_message() {
+        let keypair = Keypair::new();
+        let ping = Ping::new(&keypair).unwrap();
+        let pong = Pong::new(&ping, &keypair).unwrap();
+        let msg = Protocol::PongMessage(pong);
+        let bytes = msg.encode_to().unwrap();
+        let decoded = Protocol::decode_from(&bytes).unwrap();
+        assert!(matches!(decoded, Protocol::PongMessage(_)));
+    }
+
+    #[test]
+    fn roundtrip_prune_message() {
+        let pk = Pubkey::new_unique();
+        let prune = PruneData {
+            pubkey: pk,
+            prunes: vec![Pubkey::new_unique()],
+            signature: solana_sdk::signature::Signature::default(),
+            destination: pk,
+            wallclock: 1000,
+        };
+        let msg = Protocol::PruneMessage(pk, prune);
+        let bytes = msg.encode_to().unwrap();
+        let decoded = Protocol::decode_from(&bytes).unwrap();
+        assert!(matches!(decoded, Protocol::PruneMessage(_, _)));
+    }
+
+    #[test]
+    fn decode_unknown_tag() {
+        let bytes = vec![0xff, 0xff, 0xff, 0xff];
+        let decoded = Protocol::decode_from(&bytes).unwrap();
+        assert!(matches!(decoded, Protocol::Unknown));
+    }
+
+    #[test]
+    fn decode_pull_response_empty() {
+        let msg = Protocol::PullResponse(test_pubkey(), vec![]);
+        let bytes = msg.encode_to().unwrap();
+        let decoded = Protocol::decode_from(&bytes).unwrap();
+        match decoded {
+            Protocol::PullResponse(_, vals) => assert!(vals.is_empty()),
+            _ => panic!("expected PullResponse"),
+        }
+    }
+
+    #[test]
+    fn decode_push_message_empty() {
+        let msg = Protocol::PushMessage(test_pubkey(), vec![]);
+        let bytes = msg.encode_to().unwrap();
+        let decoded = Protocol::decode_from(&bytes).unwrap();
+        match decoded {
+            Protocol::PushMessage(_, vals) => assert!(vals.is_empty()),
+            _ => panic!("expected PushMessage"),
+        }
+    }
+}
+

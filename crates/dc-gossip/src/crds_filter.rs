@@ -118,3 +118,64 @@ impl Default for CrdsFilter {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_creates_filter() {
+        let f = CrdsFilter::new(512, 0);
+        assert!(f.mask_bits() >= 6, "mask_bits should be >= 6 for release-mode Agave compat");
+    }
+
+    #[test]
+    fn new_zero_bytes() {
+        let f = CrdsFilter::new(1, 0);
+        // Must not panic
+        assert!(f.mask_bits() >= 6);
+    }
+
+    #[test]
+    fn mask_bits_scales_with_items() {
+        let small = CrdsFilter::new(512, 0);
+        let big = CrdsFilter::new(512, 100_000);
+        assert!(big.mask_bits() >= small.mask_bits());
+    }
+
+    #[test]
+    fn larger_bloom_lower_mask_bits() {
+        let small_budget = CrdsFilter::new(200, 0);
+        let large_budget = CrdsFilter::new(1000, 0);
+        assert!(
+            large_budget.mask_bits() <= small_budget.mask_bits(),
+            "more bloom space should reduce mask_bits (need fewer partitions)"
+        );
+    }
+
+    #[test]
+    fn compute_mask_zero_bits() {
+        let mask = compute_mask(0, 0);
+        assert_eq!(mask, u64::MAX);
+    }
+
+    #[test]
+    fn compute_mask_max_bits() {
+        let mask = compute_mask(0x1234, 64);
+        assert_eq!(mask, 0x1234);
+    }
+
+    #[test]
+    fn default_creates_filter() {
+        let f = CrdsFilter::default();
+        assert!(f.mask_bits() <= 32, "default mask_bits should be reasonable");
+    }
+
+    #[test]
+    fn filter_is_deterministic() {
+        let a = CrdsFilter::new(512, 0);
+        let b = CrdsFilter::new(512, 0);
+        // Same inputs should produce the same mask_bits
+        assert_eq!(a.mask_bits(), b.mask_bits());
+    }
+}
