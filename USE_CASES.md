@@ -89,11 +89,6 @@ sg32
 │       └── Stream proven txs to subscribers in real-time
 │
 ├── Staking & Validators
-│   ├── Validator Monitor
-│   │   ├── Real-time uptime tracking
-│   │   ├── Vote analysis
-│   │   └── Stake-weighted leader schedule viewer
-│   │
 │   ├── MEV Distribution Tracker
 │   │   └── Track validator tips & MEV rewards per slot
 │   │

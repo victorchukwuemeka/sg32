@@ -30,7 +30,7 @@ use tokio::net::lookup_host;
 use tokio::sync::mpsc;
 use tokio::time::sleep;
 use transport::Transport;
-const DEVNET_SHRED_VERSION: u16 = 11016;
+const DEVNET_SHRED_VERSION: u16 = 7016;
 /// Run the gossip loop in the background, sending every discovered
 /// ContactInfo through the channel and updating latest_slot with the
 /// highest voted slot from the CRDS table.

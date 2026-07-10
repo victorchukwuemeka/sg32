@@ -1,0 +1,389 @@
+2026-07-02T15:37:11.085660Z  INFO dc_gossip: Our node identity: GdLbboSbC6vLXdmoGp6kK5rCm8eGHHJ6xWCqPpSJZi4w
+2026-07-02T15:37:11.580224Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-02T15:37:12.907139Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-02T15:37:12.909070Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-02T15:37:13.238288Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-02T15:37:13.238678Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=GdLbboSbC6vLXdmoGp6kK5rCm8eGHHJ6xWCqPpSJZi4w version=2.0.0 wallclock=1783006633238 gossip=105.113.58.245:8001
+2026-07-02T15:37:13.239778Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 01 00 00 00 00 00 00 00 1a ff 7c a6 dc 99 91 ce 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:37:13.243715Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-02T15:37:13.745258Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-02T15:37:14.246822Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-02T15:37:14.748876Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-02T15:37:15.253812Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-02T15:37:15.767033Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-02T15:37:16.269922Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-02T15:37:16.270626Z  INFO dc_gossip: Entering main gossip loop
+2026-07-02T15:37:21.293901Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 07 b6 d7 19 38 17 28 15 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:37:26.311282Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 2d 09 1e c4 d3 51 6a e8 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:37:31.329022Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 d3 1e cb 33 98 da 66 04 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:37:36.348136Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 b5 de d7 19 23 c4 f1 68 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:37:41.368725Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 09 43 16 41 a9 b4 1f 4e 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:37:46.386494Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 59 76 db c8 90 1d eb a2 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:37:46.386625Z  INFO dc_gossip: CRDS: 0 entries, 0 gossip peers
+2026-07-02T15:37:51.411092Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 e1 6c 8f 1e bb 39 da 04 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:37:56.437758Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 d1 c8 b0 06 09 55 04 67 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:38:01.467357Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 c2 1f 9d c5 37 32 ef 8a 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:38:06.483251Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 24 bf 1c 0c 54 3b 31 c6 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:38:11.513131Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 5a 73 1d f3 0a 25 e0 cc 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:38:16.529054Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 21 48 6c 7e aa 0d 60 77 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:38:16.529216Z  INFO dc_gossip: CRDS: 0 entries, 0 gossip peers
+2026-07-02T15:38:21.564880Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 bf c5 34 3c 49 0f b2 2c 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:29:41.762984Z  INFO dc_gossip: Our node identity: 3wXFbwmQmLZMdgE22KC6HNMPmPXijptbaUhc9CfEa18p
+2026-07-03T04:29:42.439305Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T04:29:43.840149Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T04:29:43.840304Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T04:29:44.094811Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T04:29:44.096859Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=3wXFbwmQmLZMdgE22KC6HNMPmPXijptbaUhc9CfEa18p version=3.1.14 wallclock=1783052984096 gossip=105.113.129.77:8001
+2026-07-03T04:29:44.099166Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 e2 4b a5 53 84 0c 73 ab 2e ec f8 14 3c dd 63 1e 44 5c 88 9c bb 39 d2 ad 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:29:44.099303Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T04:29:44.600963Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-03T04:29:45.101865Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-03T04:29:45.602977Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T04:29:46.103948Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T04:29:46.605008Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T04:29:47.106001Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T04:29:47.106062Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T04:29:52.118666Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 af 12 ae 26 42 e7 23 19 8b a1 2f 87 db 86 b0 32 60 52 0e 08 da 13 2d 8b 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:29:57.129841Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 b5 36 47 08 7c fa e6 40 40 56 cd 25 72 9d 4c 46 98 49 29 9a 5f 78 aa fb 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:02.143848Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 a2 ec 80 4a 2e 02 32 d0 b6 9d 88 e6 d3 4d db 5a 64 a9 0b 04 01 b4 91 01 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:07.154776Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 19 b2 2d 82 80 28 dd d7 90 07 48 61 28 51 b3 57 cc 77 b7 59 b4 4d b2 7e 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:12.167038Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 dd bf 5d 11 53 e9 32 f0 39 5c 19 51 43 dc 60 47 f3 cd 5a 43 af b8 16 72 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:17.177813Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 05 15 0e dc 99 6b c4 c3 fc 68 eb 0f 69 6b c6 11 b6 a5 b8 fd 52 e8 47 39 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:17.178029Z  INFO dc_gossip: CRDS: 0 entries, 0 gossip peers
+2026-07-03T04:30:22.188551Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 17 e8 79 20 78 fe 48 50 b9 27 15 1c b2 bc 7b 63 f1 22 cf a6 44 7b c6 bb 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:27.200542Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 cb 84 19 24 f2 0f ab cb 9b bf 53 8e 90 73 ad 2f 17 f7 9f af 3a 44 a3 82 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:32.214086Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 d9 af 28 8e 96 ee c0 e4 fa 09 53 e3 2e e0 65 b3 54 c8 df a1 62 de 64 7c 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:37.226024Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 22 ba a4 f6 1e a4 a3 15 78 7f 9f 7e 9a d4 78 d7 0e 50 26 59 82 6d 18 7a 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:42.238479Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 94 36 25 f3 34 16 22 e5 9f 7d ad 91 50 a7 b4 58 77 a8 df 7d a8 e8 e4 75 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:47.250499Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 b0 b8 90 bc 28 3f 47 26 15 aa 60 90 1b a3 3d 91 34 10 71 32 7e 77 ea 9a 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:47.250776Z  INFO dc_gossip: CRDS: 0 entries, 0 gossip peers
+2026-07-03T04:30:52.264649Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 34 30 6d bc 94 67 96 ad 28 08 8b 17 dd 97 8e 70 89 d4 14 c0 2b aa fb c9 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:30:57.275882Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 86 bd d9 b6 af 7d 69 c3 ae c4 4d 9b 84 42 36 d1 38 73 6a 93 52 83 39 6a 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T04:31:02.286391Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 71 e0 d2 ce e5 bd 88 0a fc 15 07 67 2c ad c8 20 a7 ee 7a c9 d8 ec a4 51 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:15:17.689073Z  INFO dc_gossip: Our node identity: 4bp96hsokrPievNuuKBVH5Nxbec8A2NYGBNLZwyCT1D7
+2026-07-03T05:15:18.558623Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T05:15:19.476269Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T05:15:19.476429Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T05:15:19.987109Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T05:15:19.988915Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=4bp96hsokrPievNuuKBVH5Nxbec8A2NYGBNLZwyCT1D7 version=3.1.14 wallclock=1783055719988 gossip=105.113.129.77:8001
+2026-07-03T05:15:19.990703Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 e4 bd 16 35 88 56 12 da 52 be 35 79 2c 17 21 9f 7d dd ea 31 92 f2 e9 fd 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:15:19.990930Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T05:15:20.396845Z  INFO dc_gossip: [RX] 132 bytes from 35.197.53.105:8001, hex(first32): 04 00 00 00 e6 88 4e 0d 77 99 8e f8 8e 3c 3b 7e 3f aa b6 2c cb 1e 14 3b ce 08 65 75 1e a0 c6 c8
+2026-07-03T05:15:20.396922Z  INFO dc_gossip: >> Got Ping from 35.197.53.105:8001, sending Pong
+2026-07-03T05:15:20.898242Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-03T05:15:21.399104Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T05:15:21.900366Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T05:15:22.401496Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T05:15:22.902110Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T05:15:22.902172Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T05:15:27.918466Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 1c 92 96 17 16 14 b7 45 1c bd 1f c7 f9 16 a0 94 de f9 a3 73 8d 0e 90 7c 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:15:28.589051Z  INFO dc_gossip::handler: new/updated entry from 964koDACp6GNSW8uL2J49CTa7kuFSQWPErgKMKK1E9QH
+2026-07-03T05:15:28.589223Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-03T05:15:28.589283Z  INFO dc_gossip::handler: new/updated entry from 8DbBWXZxSDKDN5WnpcskoTTpJ2Z13c4TMe3WoR1Guc8q
+2026-07-03T05:15:28.589383Z  INFO dc_gossip::handler: new/updated entry from 4TA4d134hw1vGHvuPogVMbHEzu5EsqqVp47dvYCSTB3S
+2026-07-03T05:15:28.589418Z  INFO dc_gossip::handler: new/updated entry from D34M1P46VhFvDVuii8xfLrMekRo4uYFLnzC1q7o8MtuU
+2026-07-03T05:15:28.589529Z  INFO dc_gossip::handler: new/updated entry from dv4ACNkpYPcE3aKmYDqZm9G5EB3J4MRoeE7WNDRBVJB
+2026-07-03T05:15:33.106485Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 2 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 15 8f bc f2 79 37 b2 8e 43 3d 63 a7 7b 9e 86 ec 8d 9b 4f a1 a9 c4 f2 92 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:15:33.712615Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:15:33.713298Z  INFO dc_gossip::handler: new/updated entry from 9Y8V9NHwXikBFDmrYUQvKFkyWAV4KcHtuMQqq5XMjsrh
+2026-07-03T05:15:33.713704Z  INFO dc_gossip::handler: new/updated entry from 2JJV1C69nsGBW28tNqhCyAKH8nYLsT7czz6uFqRG9DJQ
+2026-07-03T05:15:33.713860Z  INFO dc_gossip::handler: new/updated entry from 97YUjL2EK42M6jG5VA4fKuVxGXDfxsC5Zawd9haLQJGk
+2026-07-03T05:15:33.713899Z  INFO dc_gossip::handler: new/updated entry from BKTK3XN6fYfhNSDY9NjZDqsp6h4pSh2YMygYYUxHh1uZ
+2026-07-03T05:15:33.714018Z  INFO dc_gossip::handler: new/updated entry from CKMqpoZzrqeobgVMsS9Es8UpRUjdhT3tA7CTPoXC3u6i
+2026-07-03T05:15:33.714896Z  INFO dc_gossip::handler: new/updated entry from BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ
+2026-07-03T05:15:33.715083Z  INFO dc_gossip::handler: new/updated entry from piNepRbvYaC33td5tdPVuWo9WwH6TE731AWanLCwFPP
+2026-07-03T05:15:33.715226Z  INFO dc_gossip::handler: new/updated entry from 97YUjL2EK42M6jG5VA4fKuVxGXDfxsC5Zawd9haLQJGk
+2026-07-03T05:15:33.715504Z  INFO dc_gossip::handler: new/updated entry from FnxXv8ZFbnPYkFtvYuFU2BDN9TwNXa7nSkND1VgR8Yoe
+2026-07-03T05:15:38.228590Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 4 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 91 a7 51 8b 56 d1 ce 04 9b 27 35 78 71 d2 22 6c a8 19 d2 f8 40 f6 97 ef 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:15:38.652043Z  INFO dc_gossip::handler: new/updated entry from dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS
+2026-07-03T05:15:38.652332Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:15:38.652540Z  INFO dc_gossip::handler: new/updated entry from dv4ACNkpYPcE3aKmYDqZm9G5EB3J4MRoeE7WNDRBVJB
+2026-07-03T05:15:38.653348Z  INFO dc_gossip::handler: new/updated entry from CzTo55HmEkDn1PXcYSM2MxLcHf7peEC36ZMUJ4unifZt
+2026-07-03T05:15:43.670469Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 4 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 4c f8 d7 56 1a 60 d4 95 27 ae 1f 8d af d9 4d 82 48 41 29 a7 08 24 a1 6e 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:15:43.949849Z  INFO dc_gossip::handler: new/updated entry from dv4ACNkpYPcE3aKmYDqZm9G5EB3J4MRoeE7WNDRBVJB
+2026-07-03T05:15:43.950028Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:15:43.950174Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:15:43.950311Z  INFO dc_gossip::handler: new/updated entry from RYJXgYVeDQJ8h6vnHcpBJMBo4kFDGy9eW1dGPXYjy4t
+2026-07-03T05:15:43.950417Z  INFO dc_gossip::handler: new/updated entry from 964koDACp6GNSW8uL2J49CTa7kuFSQWPErgKMKK1E9QH
+2026-07-03T05:15:43.950600Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-03T05:15:43.952791Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-03T05:15:43.953271Z  INFO dc_gossip::handler: new/updated entry from JDHmpeiTjYbHkaShE29EdNLtuRRYR5zKuJUmBK5jee2G
+2026-07-03T05:15:48.773816Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 6 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 6b 38 15 5d 9a e2 84 15 3e fe 44 a2 b3 23 69 97 6b 28 37 a2 62 45 c2 64 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:15:48.967701Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-03T05:15:48.968007Z  INFO dc_gossip::handler: new/updated entry from dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS
+2026-07-03T05:15:48.968210Z  INFO dc_gossip::handler: new/updated entry from DfLE7RBW5dsnuyhEDJjAVE8ABHjjhtBTYFKc1Nw6JHXP
+2026-07-03T05:15:48.968423Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:15:48.968648Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-03T05:15:48.968823Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-03T05:15:48.968981Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:15:48.969096Z  INFO dc_gossip::handler: new/updated entry from ShFtNd4pzXiC7T7mr7gg2hn33X5BSskQRBpErKPai98
+2026-07-03T05:15:49.173942Z  INFO dc_gossip::handler: new/updated entry from 6ZaNrpjNZMmtAaZ4Tjj7GhmgbqpRR9vnipoCgwqjCHR5
+2026-07-03T05:15:53.217081Z  INFO dc_gossip: CRDS: 25 entries, 6 gossip peers
+2026-07-03T05:15:53.217151Z  INFO dc_gossip:           IP Address | Age(ms) | Node identifier                               | Version | Gossip | TPUvote | TPU | TPUfwd | TVU | TVU Q | ServeR | ShredVer
+2026-07-03T05:15:53.217225Z  INFO dc_gossip:   --------------------------------------------------------------------------------------------------------------------------------
+2026-07-03T05:15:53.217326Z  INFO dc_gossip:          61.111.3.55 | 1781272697485 | 2JJV1C69nsGBW28tNqhCyAKH8nYLsT7czz6uFqRG9DJQ | 4.16385.1 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-03T05:15:53.217424Z  INFO dc_gossip:       198.13.138.227 | 1781272697489 | 9Y8V9NHwXikBFDmrYUQvKFkyWAV4KcHtuMQqq5XMjsrh | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:15:53.217520Z  INFO dc_gossip:       202.187.39.114 | 1781272724149 | 8DbBWXZxSDKDN5WnpcskoTTpJ2Z13c4TMe3WoR1Guc8q | 0.0.0   | 8001 |    none | none |  none | none |  none |  none |    7016
+2026-07-03T05:15:53.217598Z  INFO dc_gossip:        5.199.164.171 | 1781272697478 | 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH | 4.16385.1 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-03T05:15:53.217685Z  INFO dc_gossip:       208.115.227.17 | 1781272697474 | RYJXgYVeDQJ8h6vnHcpBJMBo4kFDGy9eW1dGPXYjy4t | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:15:53.217798Z  INFO dc_gossip:         107.6.94.200 | 1781272697469 | 6ZaNrpjNZMmtAaZ4Tjj7GhmgbqpRR9vnipoCgwqjCHR5 | 4.16385.1 | 21810 |   11804 |    1 |     1 | 11801 |  none | 11808 |    7016
+2026-07-03T05:15:53.217851Z  INFO dc_gossip:   Nodes: 6
+2026-07-03T05:15:54.222610Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 7 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 e6 88 09 29 a4 79 d4 2c 10 f3 41 3e 48 8f 54 e0 df 57 32 49 75 76 ef cb 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:15:54.497670Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-03T05:15:54.497953Z  INFO dc_gossip::handler: new/updated entry from dv2eQHeP4RFrJZ6UeiZWoc3XTtmtZCUKxxCApCDcRNV
+2026-07-03T05:15:54.497992Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-03T05:15:54.498147Z  INFO dc_gossip::handler: new/updated entry from FkRkBKbNUfWLXhQ99zd3tpRJ6Z2vn4s7qpuQm8ZZ2vYq
+2026-07-03T05:15:54.498178Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:15:54.502223Z  INFO dc_gossip::handler: new/updated entry from 964koDACp6GNSW8uL2J49CTa7kuFSQWPErgKMKK1E9QH
+2026-07-03T05:15:54.502628Z  INFO dc_gossip::handler: new/updated entry from dv4ACNkpYPcE3aKmYDqZm9G5EB3J4MRoeE7WNDRBVJB
+2026-07-03T05:15:54.504308Z  INFO dc_gossip::handler: new/updated entry from 5ycDEwDWykBRQ2hb8qrHXY4uScW9sJLFLmVBcNFQznrS
+2026-07-03T05:15:54.506504Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-03T05:15:54.508814Z  INFO dc_gossip::handler: new/updated entry from dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS
+2026-07-03T05:15:54.510023Z  INFO dc_gossip::handler: new/updated entry from 7fiuPqS5XYQ35XfdHbpwe9GnXLbJdpvbZfG1D6wTfugz
+2026-07-03T05:15:59.719540Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 9 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 4b 90 80 8f 52 1a 1e 6d fd 33 94 7a 31 85 b6 b3 95 fb 84 21 ca 19 b8 f9 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:00.026814Z  INFO dc_gossip::handler: new/updated entry from ER5G41F9sqXFb59ukaUv5rRWrqEJdDWj7bJqV1aousT7
+2026-07-03T05:16:00.027170Z  INFO dc_gossip::handler: new/updated entry from ShFtNd4pzXiC7T7mr7gg2hn33X5BSskQRBpErKPai98
+2026-07-03T05:16:00.027483Z  INFO dc_gossip::handler: new/updated entry from A32W98Ru5GKjvW9x9pujmXwDwpRHviU5ML1B5cSJLfxM
+2026-07-03T05:16:00.027533Z  INFO dc_gossip::handler: new/updated entry from 964koDACp6GNSW8uL2J49CTa7kuFSQWPErgKMKK1E9QH
+2026-07-03T05:16:00.027572Z  INFO dc_gossip::handler: new/updated entry from BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ
+2026-07-03T05:16:05.184847Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 12 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 1e 1b 47 a8 b6 20 8f 9c 52 cb 45 40 30 d0 84 2d 1d 68 ff 5e a1 01 c1 db 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:05.453554Z  INFO dc_gossip::handler: new/updated entry from 5HNiQFG5uhpL9Ciodz9hcKsvuecLRfgTAfZedmCXQgFw
+2026-07-03T05:16:05.453911Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:16:05.454124Z  INFO dc_gossip::handler: new/updated entry from dv2eQHeP4RFrJZ6UeiZWoc3XTtmtZCUKxxCApCDcRNV
+2026-07-03T05:16:05.454430Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-03T05:16:05.454617Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:16:10.682616Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 12 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 6a a1 8e a0 fa f4 2e 6a 91 a4 02 3a 3b 7e 5b 46 9c 4d 11 a4 f9 89 26 33 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:10.983132Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-03T05:16:10.983563Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:16:10.984018Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:16:10.984204Z  INFO dc_gossip::handler: new/updated entry from 2jtXM6BH8kiioztymHvSFDBs7Wt8zWweGFe8pZNwi7uP
+2026-07-03T05:16:16.147494Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 13 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 2d d3 65 0b 13 53 53 c9 29 e5 4f 9a 7a 24 d7 b7 ad 5d 76 05 4e 9d de cf 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:16.410419Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:16:16.411156Z  INFO dc_gossip::handler: new/updated entry from ShFtNd4pzXiC7T7mr7gg2hn33X5BSskQRBpErKPai98
+2026-07-03T05:16:16.411408Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-03T05:16:16.412185Z  INFO dc_gossip::handler: new/updated entry from BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ
+2026-07-03T05:16:21.240795Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 13 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 f3 4a 55 57 18 a5 b3 1b 0f 8f 6c 15 97 61 43 cf c2 7e d6 ea ac 3b f2 60 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:21.530344Z  INFO dc_gossip::handler: new/updated entry from 97YUjL2EK42M6jG5VA4fKuVxGXDfxsC5Zawd9haLQJGk
+2026-07-03T05:16:21.530546Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-03T05:16:21.530604Z  INFO dc_gossip::handler: new/updated entry from E7RDqAkZrZ8agpxEWhy9Eeu2T3qwbmHLtaSwQZDz5y84
+2026-07-03T05:16:23.246011Z  INFO dc_gossip: CRDS: 35 entries, 12 gossip peers
+2026-07-03T05:16:23.246081Z  INFO dc_gossip:           IP Address | Age(ms) | Node identifier                               | Version | Gossip | TPUvote | TPU | TPUfwd | TVU | TVU Q | ServeR | ShredVer
+2026-07-03T05:16:23.246157Z  INFO dc_gossip:   --------------------------------------------------------------------------------------------------------------------------------
+2026-07-03T05:16:23.246277Z  INFO dc_gossip:         64.130.33.26 | 1781272727497 | 5ycDEwDWykBRQ2hb8qrHXY4uScW9sJLFLmVBcNFQznrS | 4.32769.3 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:23.246362Z  INFO dc_gossip:       202.187.39.114 | 1781272754178 | 8DbBWXZxSDKDN5WnpcskoTTpJ2Z13c4TMe3WoR1Guc8q | 0.0.0   | 8001 |    none | none |  none | none |  none |  none |    7016
+2026-07-03T05:16:23.246437Z  INFO dc_gossip:       208.115.227.17 | 1781272727503 | RYJXgYVeDQJ8h6vnHcpBJMBo4kFDGy9eW1dGPXYjy4t | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:23.246551Z  INFO dc_gossip:      206.223.226.185 | 1781272727488 | 964koDACp6GNSW8uL2J49CTa7kuFSQWPErgKMKK1E9QH | 4.16385.1 | 9100 |    9106 |    1 |     1 | 9101 |  none |  9110 |    7016
+2026-07-03T05:16:23.246621Z  INFO dc_gossip:        188.42.143.68 | 1781272727469 | E7RDqAkZrZ8agpxEWhy9Eeu2T3qwbmHLtaSwQZDz5y84 | 4.1.0   | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-03T05:16:23.246708Z  INFO dc_gossip:          61.111.3.55 | 1781272727514 | 2JJV1C69nsGBW28tNqhCyAKH8nYLsT7czz6uFqRG9DJQ | 4.16385.1 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-03T05:16:23.246867Z  INFO dc_gossip:       198.13.138.227 | 1781272727518 | 9Y8V9NHwXikBFDmrYUQvKFkyWAV4KcHtuMQqq5XMjsrh | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:23.246960Z  INFO dc_gossip:        31.40.217.201 | 1781272727491 | ER5G41F9sqXFb59ukaUv5rRWrqEJdDWj7bJqV1aousT7 | 4.0.3   | 8000 |    8004 |    1 |     1 | 8001 |  none |  8009 |    7016
+2026-07-03T05:16:23.247044Z  INFO dc_gossip:      140.245.116.244 | 1781272727482 | 2jtXM6BH8kiioztymHvSFDBs7Wt8zWweGFe8pZNwi7uP | 4.1.0   | 9001 |    9006 | none |  none | 9002 |  none |  9009 |    7016
+2026-07-03T05:16:23.247123Z  INFO dc_gossip:        38.46.221.182 | 1781272727495 | 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs | 4.1.0   | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-03T05:16:23.247214Z  INFO dc_gossip:         107.6.94.200 | 1781272727499 | 6ZaNrpjNZMmtAaZ4Tjj7GhmgbqpRR9vnipoCgwqjCHR5 | 4.16385.1 | 21810 |   11804 |    1 |     1 | 11801 |  none | 11808 |    7016
+2026-07-03T05:16:23.247289Z  INFO dc_gossip:      132.145.198.201 | 1781272727490 | A32W98Ru5GKjvW9x9pujmXwDwpRHviU5ML1B5cSJLfxM | 4.1.0   | 9001 |    9006 | none |  none | 9002 |  none |  9009 |    7016
+2026-07-03T05:16:23.247357Z  INFO dc_gossip:   Nodes: 12
+2026-07-03T05:16:26.258402Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 14 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 28 bb 57 6e 4f b0 91 eb c1 0c e2 7b b4 fa d3 87 a6 0e 74 c8 e9 0c 78 3d 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:26.548097Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-03T05:16:26.548289Z  INFO dc_gossip::handler: new/updated entry from E7RDqAkZrZ8agpxEWhy9Eeu2T3qwbmHLtaSwQZDz5y84
+2026-07-03T05:16:31.275578Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 14 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 b9 e0 4e fd 2b 56 46 d9 95 8a 50 71 a9 53 a6 43 6e 5b 32 ff d7 14 73 86 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:31.565416Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:16:31.565681Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-03T05:16:31.566182Z  INFO dc_gossip::handler: new/updated entry from dv4ACNkpYPcE3aKmYDqZm9G5EB3J4MRoeE7WNDRBVJB
+2026-07-03T05:16:31.566380Z  INFO dc_gossip::handler: new/updated entry from ShFtNd4pzXiC7T7mr7gg2hn33X5BSskQRBpErKPai98
+2026-07-03T05:16:31.566517Z  INFO dc_gossip::handler: new/updated entry from 62eUQCCPWcsUHmU4HPEd8YFNq8eZR3mR8BBki1JDtVqU
+2026-07-03T05:16:36.394424Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 14 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 e5 e7 d9 65 1b d4 0f e1 36 9d cc a0 ec e1 d1 0c 11 60 85 0c f8 02 cd 69 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:36.688125Z  INFO dc_gossip::handler: new/updated entry from CKMqpoZzrqeobgVMsS9Es8UpRUjdhT3tA7CTPoXC3u6i
+2026-07-03T05:16:36.688677Z  INFO dc_gossip::handler: new/updated entry from FkRkBKbNUfWLXhQ99zd3tpRJ6Z2vn4s7qpuQm8ZZ2vYq
+2026-07-03T05:16:36.688770Z  INFO dc_gossip::handler: new/updated entry from BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ
+2026-07-03T05:16:36.688951Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:16:41.868032Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 14 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 81 d3 45 cf 19 ca e3 38 7d d6 6a 7e 61 f2 ae 66 66 94 4e 89 6a c9 83 6c 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:42.112930Z  INFO dc_gossip::handler: new/updated entry from BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ
+2026-07-03T05:16:42.113585Z  INFO dc_gossip::handler: new/updated entry from dv2eQHeP4RFrJZ6UeiZWoc3XTtmtZCUKxxCApCDcRNV
+2026-07-03T05:16:42.113961Z  INFO dc_gossip::handler: new/updated entry from ShFtNd4pzXiC7T7mr7gg2hn33X5BSskQRBpErKPai98
+2026-07-03T05:16:42.114493Z  INFO dc_gossip::handler: new/updated entry from HTvL1xaLvLM3pab36RTT44b1Q9qkNxUEhoqi7xJ9qPLv
+2026-07-03T05:16:42.115130Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-03T05:16:42.115584Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-03T05:16:42.115989Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-03T05:16:46.945547Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 17 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 21 7d 84 ba 9f 30 15 7f 2e 79 4e e3 01 91 14 f4 ae c6 f5 df c8 a1 8a a1 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:47.233055Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-03T05:16:47.256095Z  INFO dc_gossip::handler: new/updated entry from ShFtNd4pzXiC7T7mr7gg2hn33X5BSskQRBpErKPai98
+2026-07-03T05:16:52.420364Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 17 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 93 ae b5 48 c5 f7 14 51 a4 9b 5e 4e 49 7b 44 b4 56 74 f5 cf 85 25 68 ab 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:52.967287Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-03T05:16:52.967570Z  INFO dc_gossip::handler: new/updated entry from DGE5PmPEEHmQvjFhueiaSoh8zn9SH52sMyhTzwBkTTk4
+2026-07-03T05:16:52.967616Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-03T05:16:52.969067Z  INFO dc_gossip::handler: new/updated entry from DwhQ9wfxcvUR9APaykFAXP4RCH9ZVuFJZMUeqAzQ2ZNp
+2026-07-03T05:16:52.969155Z  INFO dc_gossip::handler: new/updated entry from 2LnbAJv4aoR4MxmY16wQhMvUXCvmuxUXwAAT29rdi9Tz
+2026-07-03T05:16:52.969532Z  INFO dc_gossip::handler: new/updated entry from GpBapv4buU7GZXrY4bVchyrWm3EH4FezAzt8u1Q85rzd
+2026-07-03T05:16:53.510096Z  INFO dc_gossip: CRDS: 41 entries, 17 gossip peers
+2026-07-03T05:16:53.510184Z  INFO dc_gossip:           IP Address | Age(ms) | Node identifier                               | Version | Gossip | TPUvote | TPU | TPUfwd | TVU | TVU Q | ServeR | ShredVer
+2026-07-03T05:16:53.510224Z  INFO dc_gossip:   --------------------------------------------------------------------------------------------------------------------------------
+2026-07-03T05:16:53.510315Z  INFO dc_gossip:         64.130.33.26 | 1781272757761 | 5ycDEwDWykBRQ2hb8qrHXY4uScW9sJLFLmVBcNFQznrS | 4.32769.3 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:53.510380Z  INFO dc_gossip:       202.187.39.114 | 1781272784442 | 8DbBWXZxSDKDN5WnpcskoTTpJ2Z13c4TMe3WoR1Guc8q | 0.0.0   | 8001 |    none | none |  none | none |  none |  none |    7016
+2026-07-03T05:16:53.510435Z  INFO dc_gossip:        67.209.54.163 | 1781272757711 | BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ | 4.16385.1 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:53.510485Z  INFO dc_gossip:       208.115.227.17 | 1781272757767 | RYJXgYVeDQJ8h6vnHcpBJMBo4kFDGy9eW1dGPXYjy4t | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:53.510545Z  INFO dc_gossip:       208.91.111.147 | 1781272757700 | DwhQ9wfxcvUR9APaykFAXP4RCH9ZVuFJZMUeqAzQ2ZNp | 4.0.1   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8010 |    7016
+2026-07-03T05:16:53.510620Z  INFO dc_gossip:        64.130.59.167 | 1781272757698 | DGE5PmPEEHmQvjFhueiaSoh8zn9SH52sMyhTzwBkTTk4 | 4.32769.3 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:53.510676Z  INFO dc_gossip:       208.115.212.49 | 1781272757702 | GpBapv4buU7GZXrY4bVchyrWm3EH4FezAzt8u1Q85rzd | 4.16385.1 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:53.510723Z  INFO dc_gossip:      206.223.226.185 | 1781272757752 | 964koDACp6GNSW8uL2J49CTa7kuFSQWPErgKMKK1E9QH | 4.16385.1 | 9100 |    9106 |    1 |     1 | 9101 |  none |  9110 |    7016
+2026-07-03T05:16:53.510990Z  INFO dc_gossip:          61.111.3.55 | 1781272757778 | 2JJV1C69nsGBW28tNqhCyAKH8nYLsT7czz6uFqRG9DJQ | 4.16385.1 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-03T05:16:53.511179Z  INFO dc_gossip:       198.13.138.227 | 1781272757783 | 9Y8V9NHwXikBFDmrYUQvKFkyWAV4KcHtuMQqq5XMjsrh | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:53.511290Z  INFO dc_gossip:        72.251.11.205 | 1781272757703 | 2LnbAJv4aoR4MxmY16wQhMvUXCvmuxUXwAAT29rdi9Tz | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:53.511355Z  INFO dc_gossip:         64.130.56.47 | 1781272757714 | HTvL1xaLvLM3pab36RTT44b1Q9qkNxUEhoqi7xJ9qPLv | 4.16385.0 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-03T05:16:53.511418Z  INFO dc_gossip:        109.94.99.153 | 1781272757712 | dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92 | 4.1.1   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-03T05:16:53.511480Z  INFO dc_gossip:        31.40.217.201 | 1781272757756 | ER5G41F9sqXFb59ukaUv5rRWrqEJdDWj7bJqV1aousT7 | 4.0.3   | 8000 |    8004 |    1 |     1 | 8001 |  none |  8009 |    7016
+2026-07-03T05:16:53.511542Z  INFO dc_gossip:      140.245.116.244 | 1781272757746 | 2jtXM6BH8kiioztymHvSFDBs7Wt8zWweGFe8pZNwi7uP | 4.1.0   | 9001 |    9006 | none |  none | 9002 |  none |  9009 |    7016
+2026-07-03T05:16:53.511605Z  INFO dc_gossip:         107.6.94.200 | 1781272757763 | 6ZaNrpjNZMmtAaZ4Tjj7GhmgbqpRR9vnipoCgwqjCHR5 | 4.16385.1 | 21810 |   11804 |    1 |     1 | 11801 |  none | 11808 |    7016
+2026-07-03T05:16:53.511665Z  INFO dc_gossip:      132.145.198.201 | 1781272757754 | A32W98Ru5GKjvW9x9pujmXwDwpRHviU5ML1B5cSJLfxM | 4.1.0   | 9001 |    9006 | none |  none | 9002 |  none |  9009 |    7016
+2026-07-03T05:16:53.511711Z  INFO dc_gossip:   Nodes: 17
+2026-07-03T05:16:57.521862Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 21 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 15 a6 e1 29 3b 38 48 0b c5 e1 97 a8 4f f3 4d c8 fb 0e 70 72 ae 70 64 3d 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:16:57.679182Z  INFO dc_gossip::handler: new/updated entry from 5HNiQFG5uhpL9Ciodz9hcKsvuecLRfgTAfZedmCXQgFw
+2026-07-03T05:16:57.679587Z  INFO dc_gossip::handler: new/updated entry from D34M1P46VhFvDVuii8xfLrMekRo4uYFLnzC1q7o8MtuU
+2026-07-03T05:16:57.681363Z  INFO dc_gossip::handler: new/updated entry from CzTo55HmEkDn1PXcYSM2MxLcHf7peEC36ZMUJ4unifZt
+2026-07-03T05:16:57.681640Z  INFO dc_gossip::handler: new/updated entry from piNepRbvYaC33td5tdPVuWo9WwH6TE731AWanLCwFPP
+2026-07-03T05:16:57.682606Z  INFO dc_gossip::handler: new/updated entry from E7RDqAkZrZ8agpxEWhy9Eeu2T3qwbmHLtaSwQZDz5y84
+2026-07-03T05:17:02.946872Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 23 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 c9 4a cc e7 4f 97 01 1c db 6c d6 b4 4d 38 46 7d bc e0 de cd 9e 5e 2e b5 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:17:03.207058Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:17:03.207154Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:17:03.207452Z  INFO dc_gossip::handler: new/updated entry from dv2eQHeP4RFrJZ6UeiZWoc3XTtmtZCUKxxCApCDcRNV
+2026-07-03T05:17:03.208028Z  INFO dc_gossip::handler: new/updated entry from C8ZAr6Zz5hMF8wz38TMhg4gWfBrrkBA3kzQhp1sKz1JD
+2026-07-03T05:17:03.208223Z  INFO dc_gossip::handler: new/updated entry from E7RDqAkZrZ8agpxEWhy9Eeu2T3qwbmHLtaSwQZDz5y84
+2026-07-03T05:17:03.208405Z  INFO dc_gossip::handler: new/updated entry from dv4ACNkpYPcE3aKmYDqZm9G5EB3J4MRoeE7WNDRBVJB
+2026-07-03T05:17:03.208774Z  INFO dc_gossip::handler: new/updated entry from 964koDACp6GNSW8uL2J49CTa7kuFSQWPErgKMKK1E9QH
+2026-07-03T05:17:03.209006Z  INFO dc_gossip::handler: new/updated entry from FkRkBKbNUfWLXhQ99zd3tpRJ6Z2vn4s7qpuQm8ZZ2vYq
+2026-07-04T11:49:19.969089Z  INFO dc_gossip: Our node identity: 9rqpowyPQZVFc2Vdfhy6D4DCodYJff9BakoNgedzSBeo
+2026-07-04T11:49:20.816419Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-04T11:49:21.837872Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-04T11:49:21.837970Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-04T11:49:22.246518Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-04T11:49:22.248760Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=9rqpowyPQZVFc2Vdfhy6D4DCodYJff9BakoNgedzSBeo version=3.1.14 wallclock=1783165762247 gossip=105.113.84.214:8001
+2026-07-04T11:49:22.262170Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 72 2c 5a 2a 89 df 09 26 dd 39 f2 8a 1d bd a2 53 4b 0d d7 ed 7e 8e 2b 97 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:49:22.262379Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-04T11:49:22.630659Z  INFO dc_gossip: [RX] 132 bytes from 35.197.53.105:8001, hex(first32): 04 00 00 00 e6 88 4e 0d 77 99 8e f8 8e 3c 3b 7e 3f aa b6 2c cb 1e 14 3b ce 08 65 75 1e a0 c6 c8
+2026-07-04T11:49:22.630764Z  INFO dc_gossip: >> Got Ping from 35.197.53.105:8001, sending Pong
+2026-07-04T11:49:23.132606Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-04T11:49:23.633347Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-04T11:49:24.134499Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-04T11:49:24.635456Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-04T11:49:25.136677Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-04T11:49:25.136769Z  INFO dc_gossip: Entering main gossip loop
+2026-07-04T11:49:30.150150Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 ca f2 10 1e a0 2e dd 71 d9 ea 9c eb d1 4c 22 4a e1 b1 f1 94 80 92 34 43 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:49:30.661778Z  INFO dc_gossip::handler: new/updated entry from bvto43iRswEcbKSFXvBfLwJSMYp1oLQdd9Dt6ndMBJ7
+2026-07-04T11:49:30.662282Z  INFO dc_gossip::handler: new/updated entry from piNepRbvYaC33td5tdPVuWo9WwH6TE731AWanLCwFPP
+2026-07-04T11:49:30.662362Z  INFO dc_gossip::handler: new/updated entry from D3HyYMkRu5RbHD4oJz2kVLMikJZHSyq6ZWQFRPHr8VJ5
+2026-07-04T11:49:30.662925Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-04T11:49:30.662994Z  INFO dc_gossip::handler: new/updated entry from 8HyqnT8vaJ9WX4VY8ZaowM99H2MfMnvkNf9dqS92qirY
+2026-07-04T11:49:35.173589Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 3 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 80 33 5d c8 36 1d 8e 16 1f 00 f5 17 86 10 c9 f5 ae b3 d8 d7 8f 72 65 42 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:49:35.547160Z  INFO dc_gossip::handler: new/updated entry from JDHmpeiTjYbHkaShE29EdNLtuRRYR5zKuJUmBK5jee2G
+2026-07-04T11:49:35.547575Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-04T11:49:35.548119Z  INFO dc_gossip::handler: new/updated entry from CzTo55HmEkDn1PXcYSM2MxLcHf7peEC36ZMUJ4unifZt
+2026-07-04T11:49:35.548183Z  INFO dc_gossip::handler: new/updated entry from EdZh2wXqcx51pAGWkpWDyD95JgACNDzbkUpaRQyBtQng
+2026-07-04T11:49:35.548737Z  INFO dc_gossip::handler: new/updated entry from 6mBXY8NS4oXz5J9F6YHPT4qBYCjCscbdndcWhWCGoUho
+2026-07-04T11:49:35.549087Z  INFO dc_gossip::handler: new/updated entry from 8UxUEkcLphjeEvkxE55aR5myVHGcnpEacCkavdSjoSkr
+2026-07-04T11:49:35.549137Z  INFO dc_gossip::handler: new/updated entry from udAKghf3vHWLoJ9bTWvG4J63BVSPBW7TiQgfkgegPBJ
+2026-07-04T11:49:35.549720Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-04T11:49:35.549808Z  INFO dc_gossip::handler: new/updated entry from 8DbBWXZxSDKDN5WnpcskoTTpJ2Z13c4TMe3WoR1Guc8q
+2026-07-04T11:49:35.549858Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-04T11:49:35.550416Z  INFO dc_gossip::handler: new/updated entry from 97YUjL2EK42M6jG5VA4fKuVxGXDfxsC5Zawd9haLQJGk
+2026-07-04T11:49:40.563921Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 6 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 d5 61 75 55 05 83 34 b1 33 8e 1f 90 ab 34 7a 17 99 f3 22 f4 db 81 03 5a 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:49:40.987221Z  INFO dc_gossip::handler: new/updated entry from piNepRbvYaC33td5tdPVuWo9WwH6TE731AWanLCwFPP
+2026-07-04T11:49:40.990050Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-04T11:49:40.991304Z  INFO dc_gossip::handler: new/updated entry from CKMqpoZzrqeobgVMsS9Es8UpRUjdhT3tA7CTPoXC3u6i
+2026-07-04T11:49:40.993438Z  INFO dc_gossip::handler: new/updated entry from FnxXv8ZFbnPYkFtvYuFU2BDN9TwNXa7nSkND1VgR8Yoe
+2026-07-04T11:49:40.994264Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-04T11:49:40.995259Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-04T11:49:40.995763Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-04T11:49:46.015232Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 6 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 e2 d0 df 47 53 cc 6f 4b f7 bd f5 6e 25 72 4f cc a9 be e6 fc 0b 36 b0 ed 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:49:46.311758Z  INFO dc_gossip::handler: new/updated entry from E7RDqAkZrZ8agpxEWhy9Eeu2T3qwbmHLtaSwQZDz5y84
+2026-07-04T11:49:46.312929Z  INFO dc_gossip::handler: new/updated entry from GwXj2Y2MP4P9GmaKTQDA7XoC5JyjhyfaBPwGGjpgjbYV
+2026-07-04T11:49:46.313845Z  INFO dc_gossip::handler: new/updated entry from E7RDqAkZrZ8agpxEWhy9Eeu2T3qwbmHLtaSwQZDz5y84
+2026-07-04T11:49:51.416148Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 7 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 6f 6b aa 69 e9 1c fe 45 cf 00 b3 d1 1b a1 68 a2 fb b8 d3 37 82 d6 8c 53 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:49:51.746248Z  INFO dc_gossip::handler: new/updated entry from E7RDqAkZrZ8agpxEWhy9Eeu2T3qwbmHLtaSwQZDz5y84
+2026-07-04T11:49:51.746984Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-04T11:49:51.768743Z  INFO dc_gossip::handler: new/updated entry from dv2eQHeP4RFrJZ6UeiZWoc3XTtmtZCUKxxCApCDcRNV
+2026-07-04T11:49:55.309380Z  INFO dc_gossip: CRDS: 22 entries, 6 gossip peers
+2026-07-04T11:49:55.309455Z  INFO dc_gossip:           IP Address | Age(ms) | Node identifier                               | Version | Gossip | TPUvote | TPU | TPUfwd | TVU | TVU Q | ServeR | ShredVer
+2026-07-04T11:49:55.309515Z  INFO dc_gossip:   --------------------------------------------------------------------------------------------------------------------------------
+2026-07-04T11:49:55.309609Z  INFO dc_gossip:        64.130.50.114 | 1781382629540 | EdZh2wXqcx51pAGWkpWDyD95JgACNDzbkUpaRQyBtQng | 4.32769.3 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-04T11:49:55.309698Z  INFO dc_gossip:        35.163.70.251 | 1781382629541 | D3HyYMkRu5RbHD4oJz2kVLMikJZHSyq6ZWQFRPHr8VJ5 | 4.16385.1 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-04T11:49:55.309764Z  INFO dc_gossip:        64.130.57.118 | 1781382629543 | 8HyqnT8vaJ9WX4VY8ZaowM99H2MfMnvkNf9dqS92qirY | 4.32769.3 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-04T11:49:55.309819Z  INFO dc_gossip:        64.130.59.203 | 1781382629541 | udAKghf3vHWLoJ9bTWvG4J63BVSPBW7TiQgfkgegPBJ | 4.32769.3 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-04T11:49:55.309904Z  INFO dc_gossip:          64.130.34.4 | 1781382629526 | GwXj2Y2MP4P9GmaKTQDA7XoC5JyjhyfaBPwGGjpgjbYV | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-04T11:49:55.309964Z  INFO dc_gossip:       202.187.39.114 | 1781382766241 | 8DbBWXZxSDKDN5WnpcskoTTpJ2Z13c4TMe3WoR1Guc8q | 0.0.0   | 8001 |    none | none |  none | none |  none |  none |    7016
+2026-07-04T11:49:55.310069Z  INFO dc_gossip:   Nodes: 6
+2026-07-04T11:49:56.814583Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 7 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 ee ab e0 c2 78 72 4f b9 2b 4c 28 85 d5 ac 32 32 83 cc 12 5d 87 c4 cf e9 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:49:57.064770Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-04T11:49:57.065298Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-04T11:49:57.065659Z  INFO dc_gossip::handler: new/updated entry from FwJfo26hVx5GbL3eHkbcGh1iybaHG2HRrPTvwFKhDwgA
+2026-07-04T11:49:57.066145Z  INFO dc_gossip::handler: new/updated entry from 964koDACp6GNSW8uL2J49CTa7kuFSQWPErgKMKK1E9QH
+2026-07-04T11:49:57.066534Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-04T11:49:57.074426Z  INFO dc_gossip::handler: new/updated entry from BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ
+2026-07-04T11:50:02.293294Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 8 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 53 fb 5d c9 b4 c1 aa 49 aa 56 dc 5d 28 52 8c 52 9c 55 60 5c 24 7b 8e 30 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:50:02.594014Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-04T11:50:02.594725Z  INFO dc_gossip::handler: new/updated entry from JDHmpeiTjYbHkaShE29EdNLtuRRYR5zKuJUmBK5jee2G
+2026-07-04T11:50:02.595654Z  INFO dc_gossip::handler: new/updated entry from BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ
+2026-07-04T11:50:02.596662Z  INFO dc_gossip::handler: new/updated entry from AYv2tiaNY3QCwe13TpRmRGnxiWQnqW5258ZpnNbjGvwx
+2026-07-04T11:50:02.597338Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-04T11:50:02.598114Z  INFO dc_gossip::handler: new/updated entry from piNepRbvYaC33td5tdPVuWo9WwH6TE731AWanLCwFPP
+2026-07-04T11:50:02.598196Z  INFO dc_gossip::handler: new/updated entry from 97YUjL2EK42M6jG5VA4fKuVxGXDfxsC5Zawd9haLQJGk
+2026-07-04T11:50:02.598949Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-04T11:50:02.724159Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-04T11:50:07.741913Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 10 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 f4 df 83 e7 d4 7b 59 32 f8 80 57 0a 1b 36 21 78 6a de 0b 30 78 0a 72 4a 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:50:08.021989Z  INFO dc_gossip::handler: new/updated entry from RYJXgYVeDQJ8h6vnHcpBJMBo4kFDGy9eW1dGPXYjy4t
+2026-07-04T11:50:08.023197Z  INFO dc_gossip::handler: new/updated entry from dv2eQHeP4RFrJZ6UeiZWoc3XTtmtZCUKxxCApCDcRNV
+2026-07-04T11:50:13.181062Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 11 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 8b ed c7 1c 33 87 47 0d 80 bf 81 1a 66 81 4d e6 d3 1d 9e 04 37 3c 06 b2 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:50:13.448381Z  INFO dc_gossip::handler: new/updated entry from dv4ACNkpYPcE3aKmYDqZm9G5EB3J4MRoeE7WNDRBVJB
+2026-07-04T11:50:13.449089Z  INFO dc_gossip::handler: new/updated entry from 8Z8xMFThmuYsuDjPuBgCtAe9MVmgFVF6y2Kq4SiNokri
+2026-07-04T11:50:13.449575Z  INFO dc_gossip::handler: new/updated entry from ShFtNd4pzXiC7T7mr7gg2hn33X5BSskQRBpErKPai98
+2026-07-04T11:50:13.450003Z  INFO dc_gossip::handler: new/updated entry from CmhHEjbUHDxwHJVSXZ6aoQqCXKDbpsCXiYyzdAcgGWqT
+2026-07-04T11:50:13.450626Z  INFO dc_gossip::handler: new/updated entry from 2wFFs4VbemRcMmtSHDk9uM4Rz1tjuSqpPa3aWqKbFpaV
+2026-07-04T11:50:18.606960Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 12 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 01 9b d5 e1 1a d9 5a 90 d4 41 b4 17 ab 05 99 08 fd 3b f5 dc 2e 99 82 d0 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:50:18.875620Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-04T11:50:18.876701Z  INFO dc_gossip::handler: new/updated entry from piNepRbvYaC33td5tdPVuWo9WwH6TE731AWanLCwFPP
+2026-07-04T11:50:18.877376Z  INFO dc_gossip::handler: new/updated entry from 5HNiQFG5uhpL9Ciodz9hcKsvuecLRfgTAfZedmCXQgFw
+2026-07-04T11:50:18.878335Z  INFO dc_gossip::handler: new/updated entry from UWEFxGCE2k5EGGSRrMFXefs1zCqVALseh4NH9yk78iZ
+2026-07-04T11:50:24.023229Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 13 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 43 e7 d4 fe 33 54 6f b0 e6 19 fd 09 de 51 da 08 b5 e0 3f 57 c3 51 1b bd 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:50:24.303450Z  INFO dc_gossip::handler: new/updated entry from dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS
+2026-07-04T11:50:24.303557Z  INFO dc_gossip::handler: new/updated entry from dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS
+2026-07-04T11:50:24.304480Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-04T11:50:24.304542Z  INFO dc_gossip::handler: new/updated entry from BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ
+2026-07-04T11:50:24.305326Z  INFO dc_gossip::handler: new/updated entry from GcZ4kVkYHBsaSzAqKDfE5VENViYG9eryzUycLcnBkc9V
+2026-07-04T11:50:24.306275Z  INFO dc_gossip::handler: new/updated entry from AxpSJsiCaHkUEfR4P5TdwozqXj5FJSQdWGbpDsJraJHk
+2026-07-04T11:50:24.349316Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-04T11:50:25.467450Z  INFO dc_gossip: CRDS: 38 entries, 14 gossip peers
+2026-07-04T11:50:25.467524Z  INFO dc_gossip:           IP Address | Age(ms) | Node identifier                               | Version | Gossip | TPUvote | TPU | TPUfwd | TVU | TVU Q | ServeR | ShredVer
+2026-07-04T11:50:25.467586Z  INFO dc_gossip:   --------------------------------------------------------------------------------------------------------------------------------
+2026-07-04T11:50:25.467687Z  INFO dc_gossip:        64.130.50.114 | 1781382659698 | EdZh2wXqcx51pAGWkpWDyD95JgACNDzbkUpaRQyBtQng | 4.32769.3 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-04T11:50:25.467789Z  INFO dc_gossip:        35.163.70.251 | 1781382659699 | D3HyYMkRu5RbHD4oJz2kVLMikJZHSyq6ZWQFRPHr8VJ5 | 4.16385.1 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-04T11:50:25.467877Z  INFO dc_gossip:        64.130.57.118 | 1781382659701 | 8HyqnT8vaJ9WX4VY8ZaowM99H2MfMnvkNf9dqS92qirY | 4.32769.3 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-04T11:50:25.467945Z  INFO dc_gossip:       103.106.59.111 | 1781382659647 | AxpSJsiCaHkUEfR4P5TdwozqXj5FJSQdWGbpDsJraJHk | 4.16385.1 | 8801 |    8003 |    1 |     1 | 8000 |  none |  8007 |    7016
+2026-07-04T11:50:25.468003Z  INFO dc_gossip:       206.223.233.13 | 1781382659674 | FwJfo26hVx5GbL3eHkbcGh1iybaHG2HRrPTvwFKhDwgA | 4.16385.1 | 21810 |   11804 |    1 |     1 | 11801 |  none | 11808 |    7016
+2026-07-04T11:50:25.468080Z  INFO dc_gossip:       202.187.39.114 | 1781382796400 | 8DbBWXZxSDKDN5WnpcskoTTpJ2Z13c4TMe3WoR1Guc8q | 0.0.0   | 8001 |    none | none |  none | none |  none |  none |    7016
+2026-07-04T11:50:25.468166Z  INFO dc_gossip:        103.106.59.87 | 1781382659655 | 8Z8xMFThmuYsuDjPuBgCtAe9MVmgFVF6y2Kq4SiNokri | 4.16385.1 | 8801 |    8003 |    1 |     1 | 8000 |  none |  8007 |    7016
+2026-07-04T11:50:25.468229Z  INFO dc_gossip:       208.115.227.17 | 1781382659665 | RYJXgYVeDQJ8h6vnHcpBJMBo4kFDGy9eW1dGPXYjy4t | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-04T11:50:25.468278Z  INFO dc_gossip:       103.106.59.105 | 1781382659655 | UWEFxGCE2k5EGGSRrMFXefs1zCqVALseh4NH9yk78iZ | 4.16385.1 | 8001 |    8004 |    1 |     1 | 8000 |  none |  8008 |    7016
+2026-07-04T11:50:25.468320Z  INFO dc_gossip:        5.199.164.219 | 1781382659647 | GcZ4kVkYHBsaSzAqKDfE5VENViYG9eryzUycLcnBkc9V | 4.16385.1 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-04T11:50:25.468361Z  INFO dc_gossip:        5.199.164.171 | 1781382659671 | 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH | 4.16385.1 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-04T11:50:25.468402Z  INFO dc_gossip:          64.130.34.4 | 1781382659685 | GwXj2Y2MP4P9GmaKTQDA7XoC5JyjhyfaBPwGGjpgjbYV | 4.1.0   | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-04T11:50:25.468444Z  INFO dc_gossip:        64.130.59.203 | 1781382659700 | udAKghf3vHWLoJ9bTWvG4J63BVSPBW7TiQgfkgegPBJ | 4.32769.3 | 8001 |    8005 |    1 |     1 | 8002 |  none |  8009 |    7016
+2026-07-04T11:50:25.468485Z  INFO dc_gossip:         64.130.56.36 | 1781382659668 | AYv2tiaNY3QCwe13TpRmRGnxiWQnqW5258ZpnNbjGvwx | 4.16385.0 | 8000 |    8004 |    1 |     1 | 8001 |  none |  8008 |    7016
+2026-07-04T11:50:25.468510Z  INFO dc_gossip:   Nodes: 14
+2026-07-04T11:50:29.479567Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 15 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 c7 01 a1 61 df 08 ab e2 bd 2c b2 06 31 95 01 ed 32 24 f3 6b ac 97 6c 64 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:50:29.730611Z  INFO dc_gossip::handler: new/updated entry from dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS
+2026-07-04T11:50:29.731629Z  INFO dc_gossip::handler: new/updated entry from FkRkBKbNUfWLXhQ99zd3tpRJ6Z2vn4s7qpuQm8ZZ2vYq
+2026-07-04T11:50:29.732383Z  INFO dc_gossip::handler: new/updated entry from ShFtNd4pzXiC7T7mr7gg2hn33X5BSskQRBpErKPai98
+2026-07-04T11:50:29.733974Z  INFO dc_gossip::handler: new/updated entry from BrX9Z85BbmXYMjvvuAWU8imwsAqutVQiDg9uNfTGkzrJ
+2026-07-04T11:50:34.559501Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 15 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 2b d2 e1 c6 e6 fe 65 fc 32 7a 51 34 8f d1 58 e6 72 2b ef 38 92 4f 10 44 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:50:39.992679Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 15 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 85 cd 63 f9 7c 0a 27 97 58 80 0b 25 30 46 f3 6e 27 20 57 c5 43 ef f3 49 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:50:40.278239Z  INFO dc_gossip::handler: new/updated entry from FkRkBKbNUfWLXhQ99zd3tpRJ6Z2vn4s7qpuQm8ZZ2vYq
+2026-07-04T11:50:40.279406Z  INFO dc_gossip::handler: new/updated entry from E7RDqAkZrZ8agpxEWhy9Eeu2T3qwbmHLtaSwQZDz5y84
+2026-07-04T11:50:40.279483Z  INFO dc_gossip::handler: new/updated entry from 4nK2cq5FoFke2iEKb5rkHqpjTnn1YZDrmHKrhXwEeVze
+2026-07-04T11:50:40.280413Z  INFO dc_gossip::handler: new/updated entry from CKMqpoZzrqeobgVMsS9Es8UpRUjdhT3tA7CTPoXC3u6i
+2026-07-04T11:50:40.280946Z  INFO dc_gossip::handler: new/updated entry from GwXj2Y2MP4P9GmaKTQDA7XoC5JyjhyfaBPwGGjpgjbYV
+2026-07-04T11:50:40.281000Z  INFO dc_gossip::handler: new/updated entry from UWEFxGCE2k5EGGSRrMFXefs1zCqVALseh4NH9yk78iZ
+2026-07-04T11:50:40.281581Z  INFO dc_gossip::handler: new/updated entry from 62eUQCCPWcsUHmU4HPEd8YFNq8eZR3mR8BBki1JDtVqU
+2026-07-04T11:50:40.282294Z  INFO dc_gossip::handler: new/updated entry from dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS
+2026-07-04T11:50:40.282956Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-04T11:50:45.299220Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 18 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 bb 1a 46 44 dd a7 6d 9a 0f 85 e3 85 a7 e6 43 1d 10 56 77 da 4e 87 79 12 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-04T11:50:45.909936Z  INFO dc_gossip::handler: new/updated entry from CKMqpoZzrqeobgVMsS9Es8UpRUjdhT3tA7CTPoXC3u6i
+2026-07-04T11:50:45.910745Z  INFO dc_gossip::handler: new/updated entry from GwXj2Y2MP4P9GmaKTQDA7XoC5JyjhyfaBPwGGjpgjbYV
+2026-07-04T11:50:45.912679Z  INFO dc_gossip::handler: new/updated entry from 93VeJev1GhieTCoW1ZqutnojDtfwu3eYKm61VVPjvaff

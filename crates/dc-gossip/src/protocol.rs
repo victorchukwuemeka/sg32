@@ -2,6 +2,7 @@
 use crate::crds_data::CrdsValue;
 use crate::crds_filter::CrdsFilter;
 use crate::ping_pong::{Ping, Pong};
+use crate::short_vec;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use solana_sdk::{pubkey::Pubkey, signature::Signature};
@@ -53,7 +54,9 @@ impl Protocol {
             1 | 2 => {
                 // PullResponse(Pubkey, Vec<CrdsValue>) or PushMessage(Pubkey, Vec<CrdsValue>)
                 let from: Pubkey = bincode::deserialize_from(&mut cursor)?;
-                let count: u64 = bincode::deserialize_from(&mut cursor)?;
+                let pos = cursor.position() as usize;
+                let (count, count_bytes) = short_vec::decode_len(&bytes[pos..]);
+                cursor.set_position((pos + count_bytes) as u64);
 
                 let mut values = Vec::new();
                 for _ in 0..count {

@@ -27,6 +27,7 @@ impl Handler {
 
         match msg {
             Protocol::PushMessage(_, values) | Protocol::PullResponse(_, values) => {
+                eprintln!("[HANDLER] got {} values from {:?}", values.len(), sender);
                 for value in values {
                     let pk = value.pubkey();
                     let data_type = std::mem::discriminant(&value.data);

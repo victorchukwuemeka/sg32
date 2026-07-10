@@ -17,8 +17,10 @@ use dc_tvu::ring_buffer::{SlotData, SlotRingBuffer};
 use dc_tvu::rpc_server::{self, AppState};
 use dc_tvu::stats;
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 
 const PACKET_DATA_SIZE: usize = 1232;
@@ -88,23 +90,35 @@ async fn main() -> anyhow::Result<()> {
 
     println!("Waiting for gossip peers...");
 
+    let mut validators: HashMap<[u8; 32], SocketAddr> = HashMap::new();
+    let mut last_repair_poll = std::time::Instant::now();
     let mut last_print = std::time::Instant::now();
+    const REPAIR_POLL_SECS: u64 = 5;
 
     loop {
         tokio::select! {
             Some(ci) = gossip_rx.recv() => {
-                let serve_repair = ci.socket_by_key(4);
-                if let Some(addr) = serve_repair {
+                if let Some(addr) = ci.socket_by_key(4) {
                     let pk: [u8; 32] = ci.pubkey().to_bytes();
-                    let slot = latest_slot.load(Ordering::Relaxed);
-                    println!("-> Validator {:?} slot={} serve_repair={}",
-                        &pk[..4], slot, addr);
-                    for idx in 0..(NUM_DATA_SHREDS + NUM_CODE_SHREDS) as u64 {
-                        match send_repair_request(&socket, addr, &our_key, &pk, slot, idx).await {
-                            Ok(nonce) => println!("<- sent req (nonce={}, idx={}) to {}", nonce, idx, addr),
-                            Err(e) => eprintln!("repair failed (idx={}): {e}", idx),
+                    validators.insert(pk, addr);
+                    println!("-> Validator {:?} serve_repair={} ({} tracked)",
+                        &pk[..4], addr, validators.len());
+                }
+            }
+
+            _ = tokio::time::sleep(Duration::from_secs(1)) => {
+                let slot = latest_slot.load(Ordering::Relaxed);
+                if slot > 0 && last_repair_poll.elapsed() >= Duration::from_secs(REPAIR_POLL_SECS) {
+                    let count = validators.len();
+                    println!("[REPAIR] polling {} validators for slot {}", count, slot);
+                    for (&pk, &addr) in &validators {
+                        for idx in 0..(NUM_DATA_SHREDS + NUM_CODE_SHREDS) as u64 {
+                            if let Err(e) = send_repair_request(&socket, addr, &our_key, &pk, slot, idx).await {
+                                eprintln!("repair failed (idx={}): {e}", idx);
+                            }
                         }
                     }
+                    last_repair_poll = std::time::Instant::now();
                 }
             }
 
@@ -112,175 +126,24 @@ async fn main() -> anyhow::Result<()> {
                 let packet = &buf[..len];
                 match parse_response(packet) {
                     Some(Response::Ping { token, pubkey }) => {
-                        let slot = latest_slot.load(Ordering::Relaxed);
-                        println!("Ping from {:?} (len={}) — sending Pong (slot={})",
-                            &pubkey[..4], len, slot);
                         let pong = build_pong(&token, &our_key);
-                        match socket.send_to(&pong, peer).await {
-                            Ok(n) => println!("Pong sent ({} bytes) to {}", n, peer),
-                            Err(e) => eprintln!("Pong send failed: {e}"),
-                        }
-                        for idx in 0..(NUM_DATA_SHREDS + NUM_CODE_SHREDS) as u64 {
-                            match send_repair_request(&socket, peer, &our_key, &pubkey, slot, idx).await {
-                                Ok(nonce) => println!("Re-sent req (nonce={}, idx={}) to {}", nonce, idx, peer),
-                                Err(e) => eprintln!("re-send failed (idx={}): {e}", idx),
-                            }
-                        }
+                        let _ = socket.send_to(&pong, peer).await;
+                        println!("Ping/Pong from {:?}", &pubkey[..4]);
                     }
                     Some(Response::Shred { bytes, nonce }) => {
                         println!("SHRED! len={} nonce={} from {}", bytes.len(), nonce, peer);
-                        match Shred::parse_from_bytes(&bytes) {
-                            Some(shred) => {
-                                let batch_id = shred.erasure_set_id();
-                                let num_data = match &shred {
-                                    Shred::MerkleCode { coding_header, .. } => coding_header.num_data_shreds as usize,
-                                    _ => NUM_DATA_SHREDS,
-                                };
-                                let num_code = match &shred {
-                                    Shred::MerkleCode { coding_header, .. } => coding_header.num_coding_shreds as usize,
-                                    _ => NUM_CODE_SHREDS,
-                                };
-                                let batch = batches.entry(batch_id).or_insert_with(|| {
-                                    FecBatch::new(batch_id.slot, batch_id.fec_set_index, num_data, num_code)
-                                });
-                                let data_count = batch.data_shreds.iter().filter(|s| s.is_some()).count();
-                                let code_count = batch.code_shreds.iter().filter(|s| s.is_some()).count();
-                                {
-                                    let mut s = pipeline_stats.write().await;
-                                    s.current_batch.slot = shred.slot();
-                                    s.current_batch.fec_set_index = batch_id.fec_set_index;
-                                    s.current_batch.data_shreds = data_count;
-                                    s.current_batch.code_shreds = code_count;
-                                    s.current_batch.num_data = batch.num_data;
-                                    s.current_batch.num_code = batch.num_code;
-                                }
-                                match &shred {
-                                    Shred::MerkleData { common_header, data_header, data, .. } => {
-                                        let data_index = common_header.index - common_header.fec_set_index;
-                                        batch.add_data_shred(data_index, data.clone());
-                                        if batch.parent_slot == 0 {
-                                            batch.parent_slot = common_header.slot.saturating_sub(data_header.parent_offset as u64);
-                                        }
-                                    }
-                                    Shred::MerkleCode { coding_header, code, .. } => {
-                                        batch.add_code_shred(coding_header.position.into(), code.clone());
-                                    }
-                                }
-                                println!("slot={} fec={} data={}/{} code={}/{} total={}",
-                                    shred.slot(), batch_id.fec_set_index,
-                                    batch.data_shreds.iter().filter(|s| s.is_some()).count(), batch.num_data,
-                                    batch.code_shreds.iter().filter(|s| s.is_some()).count(), batch.num_code,
-                                    batch.received_count(),
-                                );
-                                if let Some(recovered) = batch.try_recover() {
-                                    println!("★★★ RECOVERED {} shreds! ★★★", recovered.len());
-                                    if let Some(result) = deshredder::deshred_into_txs(&recovered) {
-                                        let tree = MerkleTree::new(&result.transactions);
-                                        let root = tree.root;
-                                        let slot_data = SlotData {
-                                            slot: batch.slot,
-                                            parent_slot: batch.parent_slot,
-                                            entries: bincode::serialize(&result.entries).unwrap_or_default(),
-                                            num_transactions: result.transactions.len(),
-                                            merkle_root: Some(root),
-                                            merkle_tree: Some(Arc::new(tree)),
-                                        };
-                                        ring_buffer.write().await.put(slot_data);
-                                        let concat: Vec<u8> = recovered.concat();
-                                        let _ = file_store.write().await.save_slot(batch.slot, &concat);
-                                        println!("   → {} txs, root={:?}",
-                                            result.transactions.len(), &root[..4]);
-                                        {
-                                            let mut s = pipeline_stats.write().await;
-                                            s.total_blocks_recovered += 1;
-                                            s.latest_slot = batch.slot;
-                                            s.latest_block_txs = result.transactions.len();
-                                            s.latest_block_root = root;
-                                            s.blocks_in_ring_buffer = ring_buffer.read().await.len();
-                                            s.files_on_disk = std::fs::read_dir(&data_dir).map(|e| e.filter_map(|e| e.ok()).filter(|e| e.path().extension().is_some_and(|x| x == "dat")).count()).unwrap_or(0);
-                                        }
-                                    }
-                                    batches.remove(&batch_id);
-                                }
-                            }
-                            None => println!("parse failed from {}", peer),
+                        if let Some(shred) = Shred::parse_from_bytes(&bytes) {
+                            process_shred(shred, &mut batches, &ring_buffer, &file_store, &pipeline_stats, &data_dir).await;
+                        } else {
+                            println!("shred parse failed from {}", peer);
                         }
                     }
                     None => {
-                        // Maybe a raw Turbine push shred (no repair protocol wrapper)
-                        match Shred::parse_from_bytes(packet) {
-                            Some(shred) => {
-                                let batch_id = shred.erasure_set_id();
-                                let num_data = match &shred {
-                                    Shred::MerkleCode { coding_header, .. } => coding_header.num_data_shreds as usize,
-                                    _ => NUM_DATA_SHREDS,
-                                };
-                                let num_code = match &shred {
-                                    Shred::MerkleCode { coding_header, .. } => coding_header.num_coding_shreds as usize,
-                                    _ => NUM_CODE_SHREDS,
-                                };
-                                let batch = batches.entry(batch_id).or_insert_with(|| {
-                                    FecBatch::new(batch_id.slot, batch_id.fec_set_index, num_data, num_code)
-                                });
-                                match &shred {
-                                    Shred::MerkleData { common_header, data_header, data, .. } => {
-                                        let data_index = common_header.index - common_header.fec_set_index;
-                                        batch.add_data_shred(data_index, data.clone());
-                                        if batch.parent_slot == 0 {
-                                            batch.parent_slot = common_header.slot.saturating_sub(data_header.parent_offset as u64);
-                                        }
-                                    }
-                                    Shred::MerkleCode { coding_header, code, .. } => {
-                                        batch.add_code_shred(coding_header.position.into(), code.clone());
-                                    }
-                                }
-                                {
-                                    let mut s = pipeline_stats.write().await;
-                                    s.current_batch.slot = shred.slot();
-                                    s.current_batch.fec_set_index = batch_id.fec_set_index;
-                                    s.current_batch.data_shreds = batch.data_shreds.iter().filter(|s| s.is_some()).count();
-                                    s.current_batch.code_shreds = batch.code_shreds.iter().filter(|s| s.is_some()).count();
-                                    s.current_batch.num_data = batch.num_data;
-                                    s.current_batch.num_code = batch.num_code;
-                                }
-                                println!("TURBINE slot={} fec={} data={}/{} code={}/{} total={}",
-                                    shred.slot(), batch_id.fec_set_index,
-                                    batch.data_shreds.iter().filter(|s| s.is_some()).count(), batch.num_data,
-                                    batch.code_shreds.iter().filter(|s| s.is_some()).count(), batch.num_code,
-                                    batch.received_count(),
-                                );
-                                if let Some(recovered) = batch.try_recover() {
-                                    println!("★★★ RECOVERED {} shreds! ★★★", recovered.len());
-                                    if let Some(result) = deshredder::deshred_into_txs(&recovered) {
-                                        let tree = MerkleTree::new(&result.transactions);
-                                        let root = tree.root;
-                                        let slot_data = SlotData {
-                                            slot: batch.slot,
-                                            parent_slot: batch.parent_slot,
-                                            entries: bincode::serialize(&result.entries).unwrap_or_default(),
-                                            num_transactions: result.transactions.len(),
-                                            merkle_root: Some(root),
-                                            merkle_tree: Some(Arc::new(tree)),
-                                        };
-                                        ring_buffer.write().await.put(slot_data);
-                                        let concat: Vec<u8> = recovered.concat();
-                                        let _ = file_store.write().await.save_slot(batch.slot, &concat);
-                                        println!("   → {} txs, root={:?}",
-                                            result.transactions.len(), &root[..4]);
-                                        {
-                                            let mut s = pipeline_stats.write().await;
-                                            s.total_blocks_recovered += 1;
-                                            s.latest_slot = batch.slot;
-                                            s.latest_block_txs = result.transactions.len();
-                                            s.latest_block_root = root;
-                                            s.blocks_in_ring_buffer = ring_buffer.read().await.len();
-                                            s.files_on_disk = std::fs::read_dir(&data_dir).map(|e| e.filter_map(|e| e.ok()).filter(|e| e.path().extension().is_some_and(|x| x == "dat")).count()).unwrap_or(0);
-                                        }
-                                    }
-                                    batches.remove(&batch_id);
-                                }
-                            }
-                            None => println!("unknown (len={}) from {}", len, peer),
+                        if let Some(shred) = Shred::parse_from_bytes(packet) {
+                            println!("TURBINE shred len={} from {}", len, peer);
+                            process_shred(shred, &mut batches, &ring_buffer, &file_store, &pipeline_stats, &data_dir).await;
+                        } else {
+                            println!("unknown (len={}) from {}", len, peer);
                         }
                     }
                 }
@@ -289,9 +152,114 @@ async fn main() -> anyhow::Result<()> {
 
         if last_print.elapsed() >= std::time::Duration::from_secs(10) {
             let slot = latest_slot.load(Ordering::Relaxed);
-            println!("[STATUS] latest_slot={} peers_in_gossip={} pending_batches={}",
-                slot, 0, batches.len());
+            println!("[STATUS] latest_slot={} validators={} pending_batches={}",
+                slot, validators.len(), batches.len());
             last_print = std::time::Instant::now();
         }
+    }
+}
+
+async fn process_shred(
+    shred: Shred,
+    batches: &mut HashMap<ErasureSetId, FecBatch>,
+    ring_buffer: &Arc<RwLock<SlotRingBuffer>>,
+    file_store: &Arc<RwLock<FlatFileStore>>,
+    pipeline_stats: &stats::SharedStats,
+    data_dir: &str,
+) {
+    let batch_id = shred.erasure_set_id();
+    let num_data = match &shred {
+        Shred::MerkleCode { coding_header, .. } => coding_header.num_data_shreds as usize,
+        _ => NUM_DATA_SHREDS,
+    };
+    let num_code = match &shred {
+        Shred::MerkleCode { coding_header, .. } => coding_header.num_coding_shreds as usize,
+        _ => NUM_CODE_SHREDS,
+    };
+    let batch = batches.entry(batch_id).or_insert_with(|| {
+        FecBatch::new(batch_id.slot, batch_id.fec_set_index, num_data, num_code)
+    });
+    let data_count = batch.data_shreds.iter().filter(|s| s.is_some()).count();
+    let code_count = batch.code_shreds.iter().filter(|s| s.is_some()).count();
+    {
+        let mut s = pipeline_stats.write().await;
+        s.current_batch.slot = shred.slot();
+        s.current_batch.fec_set_index = batch_id.fec_set_index;
+        s.current_batch.data_shreds = data_count;
+        s.current_batch.code_shreds = code_count;
+        s.current_batch.num_data = batch.num_data;
+        s.current_batch.num_code = batch.num_code;
+    }
+    match &shred {
+        Shred::MerkleData { common_header, data_header, data, .. } => {
+            let data_index = common_header.index - common_header.fec_set_index;
+            batch.add_data_shred(data_index, data.clone());
+            if batch.parent_slot == 0 {
+                batch.parent_slot = common_header.slot.saturating_sub(data_header.parent_offset as u64);
+            }
+            if data_index == 0 && data_count == 0 {
+                let sv = common_header.shred_variant;
+                let variant_name = match sv & 0xF0 {
+                    0x90 => "Data",
+                    0xB0 => "Data+Resigned",
+                    0x60 => "Code",
+                    0x70 => "Code+Resigned",
+                    _ => "Unknown",
+                };
+                eprintln!("[SHRED] slot={} index={} fec={} variant=0x{:02x}({}) proof={}",
+                    common_header.slot, common_header.index, common_header.fec_set_index,
+                    sv, variant_name, sv & 0x0f);
+                eprintln!("[DATA_HEADER] parent_offset={} flags=0x{:02x} size={}",
+                    data_header.parent_offset, data_header.flags, data_header.size);
+                let data_off_print = SIZE_OF_COMMON_HEADER + SIZE_OF_DATA_HEADER; // 88
+                let after_data_print = data_header.size as usize + if common_header.shred_variant & 0xF0 == 0xB0 { SIZE_OF_SIGNATURE } else { 0 };
+                eprintln!("[DATA_OFF] data_off={} data_header.size={} data.len={} after_data_off={}",
+                    data_off_print, data_header.size, data.len(), after_data_print);
+            }
+        }
+        Shred::MerkleCode { coding_header, code, .. } => {
+            batch.add_code_shred(coding_header.position.into(), code.clone());
+        }
+    }
+    println!("slot={} fec={} data={}/{} code={}/{} total={}",
+        shred.slot(), batch_id.fec_set_index,
+        batch.data_shreds.iter().filter(|s| s.is_some()).count(), batch.num_data,
+        batch.code_shreds.iter().filter(|s| s.is_some()).count(), batch.num_code,
+        batch.received_count(),
+    );
+    if let Some(recovered) = batch.try_recover() {
+        println!("★★★ RECOVERED {} shreds! ★★★", recovered.len());
+        if let Some(first_payload) = recovered.first() {
+            let hex8 = first_payload.iter().take(8).map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(" ");
+            eprintln!("[BATCH] slot={} first_payload_len={} first8=[{}]",
+                batch.slot, first_payload.len(), hex8);
+        }
+        if let Some(result) = deshredder::deshred_into_txs(&recovered) {
+            let tree = MerkleTree::new(&result.transactions);
+            let root = tree.root;
+            let slot_data = SlotData {
+                slot: batch.slot,
+                parent_slot: batch.parent_slot,
+                entries: bincode::serialize(&result.entries).unwrap_or_default(),
+                num_transactions: result.transactions.len(),
+                merkle_root: Some(root),
+                merkle_tree: Some(Arc::new(tree)),
+            };
+            ring_buffer.write().await.put(slot_data);
+            let concat: Vec<u8> = recovered.concat();
+            let _ = file_store.write().await.save_slot(batch.slot, &concat);
+            println!("   → {} txs, root={:?}",
+                result.transactions.len(), &root[..4]);
+            {
+                let mut s = pipeline_stats.write().await;
+                s.total_blocks_recovered += 1;
+                s.latest_slot = batch.slot;
+                s.latest_block_txs = result.transactions.len();
+                s.latest_block_root = root;
+                s.blocks_in_ring_buffer = ring_buffer.read().await.len();
+                s.files_on_disk = std::fs::read_dir(data_dir).map(|e| e.filter_map(|e| e.ok()).filter(|e| e.path().extension().is_some_and(|x| x == "dat")).count()).unwrap_or(0);
+            }
+        }
+        batches.remove(&batch_id);
     }
 }

@@ -1,0 +1,292 @@
+2026-07-02T15:37:59.343941Z  INFO dc_gossip: Our node identity: LcEf77uGvnRoxijZpL1ePrf6kAxF4D2eRp8NZSNL3QL
+2026-07-02T15:38:09.171638Z  INFO dc_gossip: Our node identity: 75zZ3Cx2Pf8FQBq4RuYjwg4PB7u6GoYUcEopUssLCRnd
+2026-07-02T15:38:19.959295Z  INFO dc_gossip: Our node identity: GTsEzVfNBhAT4MsLW5k9ZFq3ptcf9ygbS3T6wRN5SSNF
+2026-07-02T15:38:39.755677Z  INFO dc_gossip: Our node identity: BnBWGEzThHRpKVgtDutLVzKM9vjrxDLuZunHjuyTxDhe
+2026-07-02T15:38:39.762119Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-02T15:38:41.583331Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-02T15:38:41.583510Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-02T15:38:42.810334Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-02T15:38:42.810826Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=BnBWGEzThHRpKVgtDutLVzKM9vjrxDLuZunHjuyTxDhe version=2.0.0 wallclock=1783006722810 gossip=105.113.58.245:8001
+2026-07-02T15:38:42.821660Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 01 00 00 00 00 00 00 00 12 37 ae 79 d1 31 e2 19 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:38:42.821824Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-02T15:38:43.322966Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-02T15:38:43.824975Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-02T15:38:44.326964Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-02T15:38:44.829157Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-02T15:38:45.331592Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-02T15:38:45.832825Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-02T15:38:45.832961Z  INFO dc_gossip: Entering main gossip loop
+2026-07-02T15:38:50.847554Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 4e 3a 3c 16 21 f0 da 95 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:38:55.861555Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 4d 68 77 ac 39 2f 45 ee 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:39:00.876093Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 d5 7a 7f 56 c4 b1 9d 04 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:39:05.894316Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 e8 c0 a9 26 24 53 cc e4 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:53:07.750255Z  INFO dc_gossip: Our node identity: 8NcpbTJS3Fiy3QKuRcZLSjj5uBVUtzgE2LaT58Vw2k1B
+2026-07-02T15:53:08.712576Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-02T15:53:10.707023Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-02T15:53:10.707131Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-02T15:53:11.576786Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-02T15:53:11.578062Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=8NcpbTJS3Fiy3QKuRcZLSjj5uBVUtzgE2LaT58Vw2k1B version=2.0.0 wallclock=1783007591578 gossip=105.113.58.245:8001
+2026-07-02T15:53:11.622300Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 01 00 00 00 00 00 00 00 f2 9c 2c 0e 07 7d a6 a9 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:53:11.622480Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-02T15:53:12.123940Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-02T15:53:12.624593Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-02T15:53:13.125477Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-02T15:53:13.629207Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-02T15:53:14.131479Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-02T15:53:14.633551Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-02T15:53:14.633622Z  INFO dc_gossip: Entering main gossip loop
+2026-07-02T15:53:19.649434Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 a0 52 ef e7 c8 ce c1 ab 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T15:53:24.665317Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 ad b0 99 57 24 2b 48 11 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:42:10.246420Z  INFO dc_gossip: Our node identity: 24waVv5ma2htaTRty694RmJcZsjRdwgWtdKDv34UWrjQ
+2026-07-02T20:42:10.958649Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-02T20:42:12.107020Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-02T20:42:12.107281Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-02T20:42:12.592800Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-02T20:42:12.593906Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=24waVv5ma2htaTRty694RmJcZsjRdwgWtdKDv34UWrjQ version=2.0.0 wallclock=1783024932593 gossip=105.113.129.165:8001
+2026-07-02T20:42:12.623427Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 01 00 00 00 00 00 00 00 3e 9d 22 9e 0e d1 42 a8 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:42:12.623785Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-02T20:42:13.124963Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-02T20:42:13.626083Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-02T20:42:14.128182Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-02T20:42:14.630308Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-02T20:42:15.131664Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-02T20:42:15.633393Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-02T20:42:15.633778Z  INFO dc_gossip: Entering main gossip loop
+2026-07-02T20:42:20.652292Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 47 f3 c8 12 e5 d0 b2 3a 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:47:11.273950Z  INFO dc_gossip: Our node identity: 9sEXHtjcXQNds3ns5wNcf6mwWw9ZTGfNo1PcGmUNt7W1
+2026-07-02T20:47:11.807060Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-02T20:47:12.867590Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-02T20:47:12.868292Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-02T20:47:13.184990Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-02T20:47:13.185801Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=9sEXHtjcXQNds3ns5wNcf6mwWw9ZTGfNo1PcGmUNt7W1 version=2.0.0 wallclock=1783025233185 gossip=105.113.129.165:8001
+2026-07-02T20:47:13.216821Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 01 00 00 00 00 00 00 00 66 09 57 65 8e 02 0a 90 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:47:13.217058Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-02T20:47:13.718600Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-02T20:47:14.219792Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-02T20:47:14.721826Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-02T20:47:15.223463Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-02T20:47:15.724280Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-02T20:47:16.226592Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-02T20:47:16.226692Z  INFO dc_gossip: Entering main gossip loop
+2026-07-02T20:47:21.243175Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 01 00 00 00 00 00 00 00 80 fd fd 9d 4b df 45 3a 01 81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:57:39.824662Z  INFO dc_gossip: Our node identity: 8sTN1hSvB47aiCtz5dyjPwgWqZAKsk5gZnmxCEXEJDEy
+2026-07-02T20:57:40.201049Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-02T20:57:41.183649Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-02T20:57:41.184995Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-02T20:57:41.447957Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-02T20:57:41.448217Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=8sTN1hSvB47aiCtz5dyjPwgWqZAKsk5gZnmxCEXEJDEy version=2.0.0 wallclock=1783025861448 gossip=105.113.129.165:8001
+2026-07-02T20:57:41.479072Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 5f ca 5c 7d 1a c0 94 5b 62 b8 84 31 ba 13 a0 b0 f7 8a b3 cf 12 71 c9 34 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:57:41.479516Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-02T20:57:41.981180Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-02T20:57:42.483077Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-02T20:57:42.984927Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-02T20:57:43.487452Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-02T20:57:43.989108Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-02T20:57:44.491010Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-02T20:57:44.491098Z  INFO dc_gossip: Entering main gossip loop
+2026-07-02T20:57:49.507194Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 9c 0d ab 72 78 b5 11 58 32 2f 04 af af bf 66 bd 48 85 11 ea ef 54 c4 b4 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:58:04.422668Z  INFO dc_gossip: Our node identity: FQcdeTWH8KYzXUfMBzLSWshRXZ2YaWZy3uwpR37eEF2j
+2026-07-02T20:58:04.429872Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-02T20:58:05.390641Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-02T20:58:05.391041Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-02T20:58:05.641213Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-02T20:58:05.641925Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=FQcdeTWH8KYzXUfMBzLSWshRXZ2YaWZy3uwpR37eEF2j version=2.0.0 wallclock=1783025885641 gossip=105.113.129.165:8001
+2026-07-02T20:58:05.671682Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 e5 18 33 60 0b 3a d6 52 85 6c da 69 8b fb 22 5d 59 5a d8 59 24 d2 99 ba 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:58:05.671934Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-02T20:58:06.173109Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-02T20:58:06.674762Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-02T20:58:07.176057Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-02T20:58:07.676879Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-02T20:58:08.178465Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-02T20:58:08.680078Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-02T20:58:08.680231Z  INFO dc_gossip: Entering main gossip loop
+2026-07-02T20:58:13.702090Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 b6 a0 07 74 7b 1f 8a 0a 5f eb a9 83 e8 be 73 0c b3 02 a7 09 8d 36 38 b9 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:58:18.719271Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 95 3f ff a7 b6 fa 02 24 ef cd 2c 79 cd e8 0a e6 e9 47 39 e9 9f 29 c6 2f 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-02T20:58:23.735695Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 9d 52 56 0e 10 82 0a c0 02 00 8c 89 17 e1 9c e9 d4 b2 d3 c2 31 bb bf 6a 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T02:37:04.787838Z  INFO dc_gossip: Our node identity: AFe6c8dXdA8MRyw2vmP27X5WECzePyJfi7cnj7cWpPSv
+2026-07-03T02:37:05.269106Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T02:37:05.897393Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T02:37:05.897531Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T02:37:06.188812Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T02:37:06.194017Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=AFe6c8dXdA8MRyw2vmP27X5WECzePyJfi7cnj7cWpPSv version=3.1.14 wallclock=1783046226190 gossip=105.113.129.77:8001
+2026-07-03T02:37:06.206907Z  INFO dc_gossip: [TX_PULL] body 1231 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 a8 c5 bd 6e bf c7 35 8c 69 00 d2 a1 30 f0 72 2e 6f 3b 9c 4a 50 55 6c 78 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T02:37:06.207063Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T02:37:06.708994Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-03T02:37:07.210877Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-03T02:37:07.712611Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T02:37:08.213572Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T02:37:08.714127Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T02:37:09.215853Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T02:37:09.215915Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T02:37:14.230819Z  INFO dc_gossip: [TX] PullRequest 1231 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 c1 e2 73 de a0 4b 10 9b 1f 83 25 c3 87 86 5e 44 88 db 85 ed e6 f2 c7 5e 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T02:37:19.246220Z  INFO dc_gossip: [TX] PullRequest 1231 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 de 33 d1 a5 e9 c7 61 17 54 8d f3 34 41 57 bb 3d 15 84 46 da 3d b1 0f d7 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T02:37:24.261803Z  INFO dc_gossip: [TX] PullRequest 1231 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 8a 61 44 88 7b 0d 73 e0 5e d8 09 b1 27 99 62 69 38 c2 34 48 10 de 09 a2 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T02:37:29.275792Z  INFO dc_gossip: [TX] PullRequest 1231 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 50 76 20 64 42 d7 52 8b 52 13 28 e7 d6 c3 08 2e 48 47 66 cd ba ae 1f fe 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T02:48:56.629074Z  INFO dc_gossip: Our node identity: 2Zkwew1WpEPS4zKcE4Gpfq3bTZTcXCSAisxx5sNMNrDd
+2026-07-03T02:48:57.280978Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T02:48:57.956219Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T02:48:57.956329Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T02:48:58.365798Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T02:48:58.367666Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=2Zkwew1WpEPS4zKcE4Gpfq3bTZTcXCSAisxx5sNMNrDd version=3.1.14 wallclock=1783046938366 gossip=105.113.129.77:8001
+2026-07-03T02:48:58.379020Z  INFO dc_gossip: [TX_PULL] body 1231 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 1e c6 d3 b8 c6 bc 57 da c6 33 1a 68 e8 3d f0 a1 48 04 aa 3f bd 16 5f 80 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T02:48:58.379413Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T02:48:58.880243Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-03T02:48:59.381112Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-03T02:48:59.881896Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T02:49:00.383205Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T02:49:00.884778Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T02:49:01.386306Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T02:49:01.386470Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T02:49:06.403525Z  INFO dc_gossip: [TX] PullRequest 1231 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 c6 9a 98 33 62 79 4f d0 2c 22 f7 af 18 67 a3 35 ae 04 6d 12 71 4c 59 dd 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T02:49:11.418180Z  INFO dc_gossip: [TX] PullRequest 1231 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 9e ae 7f 8e cc b1 e2 35 26 23 0e 3a 54 c5 78 e0 7c c4 03 e3 66 7f 92 84 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:02:34.076070Z  INFO dc_gossip: Our node identity: HrfiRhkGtaYUZMPX3csSCYhNmtokveb2MbzAUVMySnPK
+2026-07-03T03:02:37.563906Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T03:02:38.277333Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T03:02:38.277462Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T03:02:38.685361Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T03:02:38.690088Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=HrfiRhkGtaYUZMPX3csSCYhNmtokveb2MbzAUVMySnPK version=3.1.14 wallclock=1783047758685 gossip=105.113.129.77:8001
+2026-07-03T03:02:38.714709Z  INFO dc_gossip: [TX_PULL] body 1231 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 1f 17 99 9a 12 5a fe 2b 93 61 8c 59 20 3c e1 49 57 26 aa 3c 4c 41 fd b6 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:02:38.714898Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T03:02:39.216629Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-03T03:02:39.718215Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-03T03:02:40.219284Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T03:02:40.722695Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T03:02:41.224793Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T03:02:41.726726Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T03:02:41.726839Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T03:22:43.388985Z  INFO dc_gossip: Our node identity: BMjkHMid2EFwjodR1w1yztjGHJH6xZjSJt89mHqoVmsC
+2026-07-03T03:22:43.821058Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T03:22:44.642518Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T03:22:44.642872Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T03:22:45.145320Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T03:22:45.150292Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=BMjkHMid2EFwjodR1w1yztjGHJH6xZjSJt89mHqoVmsC version=3.1.14 wallclock=1783048965145 gossip=105.113.129.77:8001
+2026-07-03T03:22:45.170436Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 11 e8 55 f5 9b eb 46 3d 93 44 75 4f 2a 30 a2 c5 8e 3c ff 65 f4 a2 84 78 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:22:45.170748Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T03:22:45.672213Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-03T03:22:46.174412Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-03T03:22:46.676048Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T03:22:47.176852Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T03:22:47.678756Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T03:22:48.180599Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T03:22:48.180668Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T03:22:53.199091Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 c6 51 1d 73 63 e8 d9 cc 33 38 33 5f dd 86 bc fc 4f e0 48 e0 95 42 2f 65 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:25:13.087437Z  INFO dc_gossip: Our node identity: 33s1sqhRi8tYrpRQF6H967jMt2RydZFeHKyWmCU6jQPn
+2026-07-03T03:25:13.119494Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T03:25:13.627624Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T03:25:13.628606Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T03:25:13.935129Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T03:25:13.937261Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=33s1sqhRi8tYrpRQF6H967jMt2RydZFeHKyWmCU6jQPn version=3.1.14 wallclock=1783049113935 gossip=105.113.129.77:8001
+2026-07-03T03:25:13.951419Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 6d 17 52 2b ac 89 24 74 04 1a 70 ba 5a dd 68 b2 d9 fa fa 99 88 8e f0 fd 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:25:13.951560Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T03:25:14.453221Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-03T03:25:14.955237Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-03T03:25:15.457020Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T03:25:15.958155Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T03:25:16.460356Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T03:25:16.961950Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T03:25:16.962011Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T03:25:21.974504Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 f1 17 e1 e3 d2 b3 b9 21 b4 23 a7 66 41 c1 25 9f 3c 28 af a2 28 eb ad 4e 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:26:41.159680Z  INFO dc_gossip: Our node identity: Me3W2Gdj9Wg38hq8jZbow5rZtnVM9rgshXwQqGbVMLW
+2026-07-03T03:26:41.169956Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T03:26:41.996695Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T03:26:41.997373Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T03:26:42.302276Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T03:26:42.305069Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=Me3W2Gdj9Wg38hq8jZbow5rZtnVM9rgshXwQqGbVMLW version=3.1.14 wallclock=1783049202302 gossip=105.113.129.77:8001
+2026-07-03T03:26:42.317832Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 66 96 32 09 40 1f 07 16 24 13 52 69 40 a9 d9 70 4c 87 d8 da 8f ae 9a 14 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:26:42.318059Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T03:26:42.819175Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-03T03:26:43.319953Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-03T03:26:43.821647Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T03:26:44.324636Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T03:26:44.825967Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T03:26:45.327307Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T03:26:45.327396Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T03:26:50.347347Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 b2 e2 4d 35 74 05 2f cc 86 09 92 db f2 1b ad 66 84 89 1a 11 83 07 bf 8c 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:26:55.362784Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 7d 68 d2 25 54 4e 53 96 63 3f f1 77 71 4f 33 32 5c b8 0b 64 8e 44 02 92 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:27:00.380385Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 d3 b7 b9 74 bc 65 c4 0f 23 88 90 00 80 c6 01 02 a0 0c 02 dd 86 ab 0d 6c 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T03:27:05.397183Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 42 90 57 c7 af 5b a7 ae e1 e2 1b 44 3c f5 86 ed 45 37 2b 2e 11 42 7a 92 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:08:42.266374Z  INFO dc_gossip: Our node identity: 4CZZSJVbu9C2Gt3N2HHh2b9t3wsbU6MNRgXSVcYHYT2i
+2026-07-03T05:08:47.698061Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T05:08:48.409684Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T05:08:48.409892Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T05:08:49.022934Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T05:08:49.026647Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=4CZZSJVbu9C2Gt3N2HHh2b9t3wsbU6MNRgXSVcYHYT2i version=3.1.14 wallclock=1783055329023 gossip=105.113.129.77:8001
+2026-07-03T05:08:49.052232Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 3b 74 13 2e b3 ef 1b 36 8f 8f 92 91 c9 fa 26 09 c6 e8 17 ee f5 02 92 f9 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:08:49.055728Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T05:08:49.557763Z  INFO dc_gossip: listen window 1/6 — no packet
+2026-07-03T05:08:49.637154Z  INFO dc_gossip: [RX] 132 bytes from 35.197.53.105:8001, hex(first32): 04 00 00 00 e6 88 4e 0d 77 99 8e f8 8e 3c 3b 7e 3f aa b6 2c cb 1e 14 3b ce 08 65 75 1e a0 c6 c8
+2026-07-03T05:08:49.637334Z  INFO dc_gossip: >> Got Ping from 35.197.53.105:8001, sending Pong
+2026-07-03T05:08:50.139717Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T05:08:50.642846Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T05:08:51.143897Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T05:08:51.645228Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T05:08:51.645432Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T05:08:56.661492Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 27 24 a8 84 10 3b cc 9a 97 ac 7e 45 63 30 e3 0f 02 b5 52 e1 2a 99 ab da 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:08:57.004637Z  INFO dc_gossip::handler: new/updated entry from dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS
+2026-07-03T05:08:57.004808Z  INFO dc_gossip::handler: new/updated entry from 5B4U4jQovXuMc5fASzRkFtGt4ToiQmsSAUY7cKX1fAyR
+2026-07-03T05:08:57.004876Z  INFO dc_gossip::handler: new/updated entry from 8DbBWXZxSDKDN5WnpcskoTTpJ2Z13c4TMe3WoR1Guc8q
+2026-07-03T05:08:57.004942Z  INFO dc_gossip::handler: new/updated entry from 93VeJev1GhieTCoW1ZqutnojDtfwu3eYKm61VVPjvaff
+2026-07-03T05:08:57.004997Z  INFO dc_gossip::handler: new/updated entry from D34M1P46VhFvDVuii8xfLrMekRo4uYFLnzC1q7o8MtuU
+2026-07-03T05:08:57.005707Z  INFO dc_gossip::handler: new/updated entry from CKMqpoZzrqeobgVMsS9Es8UpRUjdhT3tA7CTPoXC3u6i
+2026-07-03T05:08:57.005916Z  INFO dc_gossip::handler: new/updated entry from 23Koi8vjSrsYwAqMQbTjBgCvd6FaNU3rXJoCHaDMBASt
+2026-07-03T05:08:57.007088Z  INFO dc_gossip::handler: new/updated entry from piNepRbvYaC33td5tdPVuWo9WwH6TE731AWanLCwFPP
+2026-07-03T05:08:57.008150Z  INFO dc_gossip::handler: new/updated entry from 97YUjL2EK42M6jG5VA4fKuVxGXDfxsC5Zawd9haLQJGk
+2026-07-03T05:08:57.008240Z  INFO dc_gossip::handler: new/updated entry from FqB7ZW57Br6mkacGvqQspnFj1HFXZRWbtHh4TPNNoNfN
+2026-07-03T05:08:57.009536Z  INFO dc_gossip::handler: new/updated entry from dv2eQHeP4RFrJZ6UeiZWoc3XTtmtZCUKxxCApCDcRNV
+2026-07-03T05:08:57.009705Z  INFO dc_gossip::handler: new/updated entry from 4ZznyCmeWNTmGJ6NMqV1DHWpnzz8QqNB6mWC7g54EgVL
+2026-07-03T05:08:57.009936Z  INFO dc_gossip::handler: new/updated entry from 97YUjL2EK42M6jG5VA4fKuVxGXDfxsC5Zawd9haLQJGk
+2026-07-03T05:08:57.010731Z  INFO dc_gossip::handler: new/updated entry from 5HNiQFG5uhpL9Ciodz9hcKsvuecLRfgTAfZedmCXQgFw
+2026-07-03T05:09:02.032059Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 4 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 9e 28 98 bc 3b 89 03 ca 55 d5 96 a5 f5 19 a9 51 f6 63 be b9 6c 7c 4c bf 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:09:02.436650Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:09:02.440041Z  INFO dc_gossip::handler: new/updated entry from dv4ACNkpYPcE3aKmYDqZm9G5EB3J4MRoeE7WNDRBVJB
+2026-07-03T05:09:02.440264Z  INFO dc_gossip::handler: new/updated entry from DfLE7RBW5dsnuyhEDJjAVE8ABHjjhtBTYFKc1Nw6JHXP
+2026-07-03T05:09:02.440367Z  INFO dc_gossip::handler: new/updated entry from 6p4nSsZvAmkjQM9QPsyrcrn2RGgAvoEfMW1pntvQmSjR
+2026-07-03T05:09:02.446005Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-03T05:09:02.447641Z  INFO dc_gossip::handler: new/updated entry from CzTo55HmEkDn1PXcYSM2MxLcHf7peEC36ZMUJ4unifZt
+2026-07-03T05:09:07.469510Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 6 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 59 f3 4a 15 3e 75 67 8c b4 83 14 a4 04 0f 48 24 be ba 92 95 e6 7b 5b 1d 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:09:07.705580Z  INFO dc_gossip::handler: new/updated entry from FkRkBKbNUfWLXhQ99zd3tpRJ6Z2vn4s7qpuQm8ZZ2vYq
+2026-07-03T05:09:07.705840Z  INFO dc_gossip::handler: new/updated entry from JDHmpeiTjYbHkaShE29EdNLtuRRYR5zKuJUmBK5jee2G
+2026-07-03T05:09:07.707641Z  INFO dc_gossip::handler: new/updated entry from BFgrXKSUYxdnaxP67CyHVR1nLSm4eUEY85Eeh3Z6yzbP
+2026-07-03T05:09:07.711191Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-03T05:09:07.713532Z  INFO dc_gossip::handler: new/updated entry from piNepRbvYaC33td5tdPVuWo9WwH6TE731AWanLCwFPP
+2026-07-03T05:09:07.731259Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:09:07.733121Z  INFO dc_gossip::handler: new/updated entry from FnxXv8ZFbnPYkFtvYuFU2BDN9TwNXa7nSkND1VgR8Yoe
+2026-07-03T05:09:07.735155Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-03T05:09:07.739376Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-03T05:31:55.213852Z  INFO dc_gossip: Our node identity: AQh2RjhcMg7sekJrh2xoPF8VBaBp79mtpRF8E3brFcBB
+2026-07-03T05:31:56.944239Z  INFO dc_gossip::transport: transport bound to 0.0.0.0:8001
+2026-07-03T05:31:57.676498Z  INFO dc_gossip: [TX] PingMessage 132 bytes to 35.197.53.105:8001
+2026-07-03T05:31:57.677016Z  INFO dc_gossip: Sent Ping to 35.197.53.105:8001, waiting for Pong...
+2026-07-03T05:31:57.983948Z  INFO dc_gossip: Got Pong from 35.197.53.105:8001 (attempt 1)
+2026-07-03T05:31:57.990678Z  INFO dc_gossip: [TX_PULL] contact_info: pubkey=AQh2RjhcMg7sekJrh2xoPF8VBaBp79mtpRF8E3brFcBB version=3.1.14 wallclock=1783056717984 gossip=105.113.129.77:8001
+2026-07-03T05:31:58.021917Z  INFO dc_gossip: [TX_PULL] body 1232 bytes, hex(first 64): 00 00 00 00 03 00 00 00 00 00 00 00 b4 ad 33 10 c0 da 7a 63 fa 10 d7 06 37 08 51 22 55 ba 76 24 71 93 42 54 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:31:58.022191Z  INFO dc_gossip: Initial PullRequest sent to entrypoint, listening for response...
+2026-07-03T05:31:58.391832Z  INFO dc_gossip: [RX] 132 bytes from 35.197.53.105:8001, hex(first32): 04 00 00 00 e6 88 4e 0d 77 99 8e f8 8e 3c 3b 7e 3f aa b6 2c cb 1e 14 3b ce 08 65 75 1e a0 c6 c8
+2026-07-03T05:31:58.395062Z  INFO dc_gossip: >> Got Ping from 35.197.53.105:8001, sending Pong
+2026-07-03T05:31:58.899086Z  INFO dc_gossip: listen window 2/6 — no packet
+2026-07-03T05:31:59.401996Z  INFO dc_gossip: listen window 3/6 — no packet
+2026-07-03T05:31:59.903420Z  INFO dc_gossip: listen window 4/6 — no packet
+2026-07-03T05:32:00.406058Z  INFO dc_gossip: listen window 5/6 — no packet
+2026-07-03T05:32:00.907363Z  INFO dc_gossip: listen window 6/6 — no packet
+2026-07-03T05:32:00.907635Z  INFO dc_gossip: Entering main gossip loop
+2026-07-03T05:32:05.923951Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 1 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 b3 79 34 be 0e 3c b1 e8 49 da 90 f7 fd aa 2c 97 d6 41 f5 4f 38 42 de 4a 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:32:06.278149Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-03T05:32:06.278547Z  INFO dc_gossip::handler: new/updated entry from 8DbBWXZxSDKDN5WnpcskoTTpJ2Z13c4TMe3WoR1Guc8q
+2026-07-03T05:32:06.280796Z  INFO dc_gossip::handler: new/updated entry from 9tWtcdPS4y4g9dNK6AXbWs3Mroo4pp1eZj92qSALd7xx
+2026-07-03T05:32:06.283059Z  INFO dc_gossip::handler: new/updated entry from UWEFxGCE2k5EGGSRrMFXefs1zCqVALseh4NH9yk78iZ
+2026-07-03T05:32:06.283315Z  INFO dc_gossip::handler: new/updated entry from C8ZAr6Zz5hMF8wz38TMhg4gWfBrrkBA3kzQhp1sKz1JD
+2026-07-03T05:32:06.284974Z  INFO dc_gossip::handler: new/updated entry from piNepRbvYaC33td5tdPVuWo9WwH6TE731AWanLCwFPP
+2026-07-03T05:32:06.285986Z  INFO dc_gossip::handler: new/updated entry from 2hR6SkTS4zEPfuvU47FKL73QVNKvX8hYRXANYwzuBcnU
+2026-07-03T05:32:06.287462Z  INFO dc_gossip::handler: new/updated entry from Cw6X5R68muAyGRCb7W8ZSP2YbaRjwMs1t5sBEPkhdwbM
+2026-07-03T05:32:06.287670Z  INFO dc_gossip::handler: new/updated entry from GcZ4kVkYHBsaSzAqKDfE5VENViYG9eryzUycLcnBkc9V
+2026-07-03T05:32:06.289121Z  INFO dc_gossip::handler: new/updated entry from D34M1P46VhFvDVuii8xfLrMekRo4uYFLnzC1q7o8MtuU
+2026-07-03T05:32:06.289328Z  INFO dc_gossip::handler: new/updated entry from 97YUjL2EK42M6jG5VA4fKuVxGXDfxsC5Zawd9haLQJGk
+2026-07-03T05:32:06.293518Z  INFO dc_gossip::handler: new/updated entry from dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92
+2026-07-03T05:32:06.293833Z  INFO dc_gossip::handler: new/updated entry from JDHmpeiTjYbHkaShE29EdNLtuRRYR5zKuJUmBK5jee2G
+2026-07-03T05:32:11.311670Z  INFO dc_gossip: [TX] PullRequest 1232 bytes to 5 peers hex(64): 00 00 00 00 03 00 00 00 00 00 00 00 ad 30 ac 99 7b 86 40 04 aa a2 46 56 57 8d 97 59 2a a6 5a ba e4 a4 82 f5 01 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2026-07-03T05:32:11.576610Z  INFO dc_gossip::handler: new/updated entry from FDQHfbqgSUk94XKFKWu6E8qidL7bwGEXDPzAoTVTXEDm
+2026-07-03T05:32:11.577943Z  INFO dc_gossip::handler: new/updated entry from CKMqpoZzrqeobgVMsS9Es8UpRUjdhT3tA7CTPoXC3u6i
+2026-07-03T05:32:11.578772Z  INFO dc_gossip::handler: new/updated entry from deepEMPe2gRjCPQ4E1VzmbDTNXt7skZie7vJbWKnpUH
+2026-07-03T05:32:11.579839Z  INFO dc_gossip::handler: new/updated entry from 3zvXem8vqvDYos6BKu66FV84tmDdQwgLxYSempy8tSrs
+2026-07-03T05:32:11.580838Z  INFO dc_gossip::handler: new/updated entry from 4mdQGkbfrFvo5eG722xCXik4hn3xzu2EJD47g7Hd4HfH
+2026-07-03T05:32:11.581656Z  INFO dc_gossip::handler: new/updated entry from dv2eQHeP4RFrJZ6UeiZWoc3XTtmtZCUKxxCApCDcRNV
