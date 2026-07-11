@@ -17,7 +17,7 @@ pub struct AppState {
 pub struct JsonRpcRequest {
     pub jsonrpc: String,
     pub method: String,
-    pub params: Option<serde_json::Value>,
+    pub params: Option<serde_json::Value>, 
     pub id: u64,
 }
 
@@ -88,6 +88,8 @@ async fn jsonrpc_handler(
         "getProof" => handle_get_proof(state, req.params, req.id).await,
         "getLatestSlot" => handle_get_latest_slot(state, req.id).await,
         "getBlock" => handle_get_block(state, req.params, req.id).await,
+        "getTransaction" => handle_get_transaction(state, req.params, req.id).await,
+        "getBlockTransactions" => handle_get_block_transactions(state, req.params, req.id).await,
         _ => Json(JsonRpcResponse {
             jsonrpc: "2.0".into(),
             result: None,
@@ -95,6 +97,30 @@ async fn jsonrpc_handler(
             id: req.id,
         }),
     }
+}
+
+async fn load_and_deshred(
+    state: &Arc<AppState>,
+    slot: u64,
+) -> Option<(Vec<crate::deshredder::Entry>, Arc<MerkleTree>)> {
+    let buf = state.ring_buffer.read().await;
+    if let Some(data) = buf.get(slot) {
+        if let Some(ref tree) = data.merkle_tree {
+            let entries: Vec<crate::deshredder::Entry> =
+                bincode::deserialize(&data.entries).ok()?;
+            return Some((entries, tree.clone()));
+        }
+    }
+    drop(buf);
+
+    let store = state.file_store.read().await;
+    let raw = store.load_slot(slot)?;
+    drop(store);
+
+    let result = crate::deshredder::deshred_into_txs(&[raw])?;
+    let tx_bytes: Vec<Vec<u8>> = result.transactions;
+    let tree = Arc::new(MerkleTree::new(&tx_bytes));
+    Some((result.entries, tree))
 }
 
 async fn handle_get_slot(
@@ -322,6 +348,118 @@ async fn handle_get_block(
             id,
         }),
     }
+}
+
+async fn handle_get_transaction(
+    state: Arc<AppState>,
+    params: Option<serde_json::Value>,
+    id: u64,
+) -> Json<JsonRpcResponse<serde_json::Value>> {
+    let arr = params
+        .and_then(|p| p.as_array().map(|a| a.clone()))
+        .unwrap_or_default();
+    let slot = arr.first().and_then(|v| v.as_u64()).unwrap_or(0);
+    let tx_index = arr
+        .get(1)
+        .and_then(|v| v.as_u64())
+        .map(|i| i as usize)
+        .unwrap_or(0);
+
+    let (entries, tree) = match load_and_deshred(&state, slot).await {
+        Some(v) => v,
+        None => {
+            return Json(JsonRpcResponse {
+                jsonrpc: "2.0".into(),
+                result: None,
+                error: Some(format!("slot {} not found", slot)),
+                id,
+            })
+        }
+    };
+
+    let txs: Vec<Vec<u8>> = entries
+        .iter()
+        .flat_map(|e| &e.transactions)
+        .map(|tx| bincode::serialize(tx).unwrap_or_default())
+        .collect();
+
+    let tx_bytes = txs.get(tx_index).cloned().unwrap_or_default();
+    if tx_bytes.is_empty() {
+        return Json(JsonRpcResponse {
+            jsonrpc: "2.0".into(),
+            result: None,
+            error: Some(format!("tx_index {} out of range", tx_index)),
+            id,
+        });
+    }
+
+    let leaf = tree.leaves.get(tx_index).copied().unwrap_or([0u8; 32]);
+    let proof = tree.prove(tx_index).unwrap_or_default();
+    let verified = MerkleTree::verify(&tree.root, &leaf, &proof, tx_index);
+
+    Json(JsonRpcResponse {
+        jsonrpc: "2.0".into(),
+        result: Some(serde_json::json!({
+            "slot": slot,
+            "tx_index": tx_index,
+            "transaction": hex::encode(&tx_bytes),
+            "leaf": hex::encode(leaf),
+            "proof": proof.iter().map(hex::encode).collect::<Vec<_>>(),
+            "root": hex::encode(tree.root),
+            "verified": verified,
+        })),
+        error: None,
+        id,
+    })
+}
+
+async fn handle_get_block_transactions(
+    state: Arc<AppState>,
+    params: Option<serde_json::Value>,
+    id: u64,
+) -> Json<JsonRpcResponse<serde_json::Value>> {
+    let slot = params
+        .and_then(|p| p.as_array()?.first()?.as_u64())
+        .unwrap_or(0);
+
+    let (entries, tree) = match load_and_deshred(&state, slot).await {
+        Some(v) => v,
+        None => {
+            return Json(JsonRpcResponse {
+                jsonrpc: "2.0".into(),
+                result: None,
+                error: Some(format!("slot {} not found", slot)),
+                id,
+            })
+        }
+    };
+
+    let txs: Vec<serde_json::Value> = entries
+        .iter()
+        .flat_map(|e| &e.transactions)
+        .enumerate()
+        .map(|(i, tx)| {
+            let tx_bytes = bincode::serialize(tx).unwrap_or_default();
+            let leaf = tree.leaves.get(i).copied().unwrap_or([0u8; 32]);
+            serde_json::json!({
+                "index": i,
+                "transaction": hex::encode(&tx_bytes),
+                "leaf": hex::encode(leaf),
+            })
+        })
+        .collect();
+
+    Json(JsonRpcResponse {
+        jsonrpc: "2.0".into(),
+        result: Some(serde_json::json!({
+            "slot": slot,
+            "num_transactions": txs.len(),
+            "transactions": txs,
+            "root": hex::encode(tree.root),
+        })),
+        error: None,
+        id,
+    })
 }
 
 const INDEX_HTML: &str = include_str!("../../../app/index.html");
