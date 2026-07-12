@@ -21,14 +21,6 @@ pub fn deshred_into_txs(data_payloads: &[Vec<u8>]) -> Option<DeshredResult> {
         all_data.extend_from_slice(payload);
     }
 
-    if let Some(first) = data_payloads.first() {
-        let hex_first_payload = first.iter().take(100).map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(" ");
-        eprintln!("[DESHRED] payload 0 (len={}) first 100 bytes: [{}]", first.len(), hex_first_payload);
-    }
-    let hex_first = all_data.iter().take(64).map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(" ");
-    eprintln!("[DESHRED] {} payloads, total={} bytes, first_bytes=[{}]",
-        data_payloads.len(), all_data.len(), hex_first);
-
     let mut reader = Cursor::new(&all_data);
     let mut entries = Vec::new();
     loop {

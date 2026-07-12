@@ -52,6 +52,10 @@ impl FlatFileStore {
         self.index.contains_key(&slot)
     }
 
+    pub fn latest_slot(&self) -> Option<u64> {
+        self.index.keys().next_back().copied()
+    }
+
     pub fn load_slot(&self, slot: u64) -> Option<Vec<u8>> {
         let info = self.index.get(&slot)?;
         fs::read(&info.data_path).ok()

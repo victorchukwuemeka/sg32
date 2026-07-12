@@ -101,16 +101,12 @@ async fn main() -> anyhow::Result<()> {
                 if let Some(addr) = ci.socket_by_key(4) {
                     let pk: [u8; 32] = ci.pubkey().to_bytes();
                     validators.insert(pk, addr);
-                    println!("-> Validator {:?} serve_repair={} ({} tracked)",
-                        &pk[..4], addr, validators.len());
                 }
             }
 
             _ = tokio::time::sleep(Duration::from_secs(1)) => {
                 let slot = latest_slot.load(Ordering::Relaxed);
                 if slot > 0 && last_repair_poll.elapsed() >= Duration::from_secs(REPAIR_POLL_SECS) {
-                    let count = validators.len();
-                    println!("[REPAIR] polling {} validators for slot {}", count, slot);
                     for (&pk, &addr) in &validators {
                         for idx in 0..(NUM_DATA_SHREDS + NUM_CODE_SHREDS) as u64 {
                             if let Err(e) = send_repair_request(&socket, addr, &our_key, &pk, slot, idx).await {
@@ -125,13 +121,11 @@ async fn main() -> anyhow::Result<()> {
             Ok((len, peer)) = socket.recv_from(&mut buf) => {
                 let packet = &buf[..len];
                 match parse_response(packet) {
-                    Some(Response::Ping { token, pubkey }) => {
+                    Some(Response::Ping { token, pubkey: _ }) => {
                         let pong = build_pong(&token, &our_key);
                         let _ = socket.send_to(&pong, peer).await;
-                        println!("Ping/Pong from {:?}", &pubkey[..4]);
                     }
-                    Some(Response::Shred { bytes, nonce }) => {
-                        println!("SHRED! len={} nonce={} from {}", bytes.len(), nonce, peer);
+                    Some(Response::Shred { bytes, nonce: _ }) => {
                         if let Some(shred) = Shred::parse_from_bytes(&bytes) {
                             process_shred(shred, &mut batches, &ring_buffer, &file_store, &pipeline_stats, &data_dir).await;
                         } else {
@@ -140,10 +134,7 @@ async fn main() -> anyhow::Result<()> {
                     }
                     None => {
                         if let Some(shred) = Shred::parse_from_bytes(packet) {
-                            println!("TURBINE shred len={} from {}", len, peer);
                             process_shred(shred, &mut batches, &ring_buffer, &file_store, &pipeline_stats, &data_dir).await;
-                        } else {
-                            println!("unknown (len={}) from {}", len, peer);
                         }
                     }
                 }
@@ -197,25 +188,7 @@ async fn process_shred(
             if batch.parent_slot == 0 {
                 batch.parent_slot = common_header.slot.saturating_sub(data_header.parent_offset as u64);
             }
-            if data_index == 0 && data_count == 0 {
-                let sv = common_header.shred_variant;
-                let variant_name = match sv & 0xF0 {
-                    0x90 => "Data",
-                    0xB0 => "Data+Resigned",
-                    0x60 => "Code",
-                    0x70 => "Code+Resigned",
-                    _ => "Unknown",
-                };
-                eprintln!("[SHRED] slot={} index={} fec={} variant=0x{:02x}({}) proof={}",
-                    common_header.slot, common_header.index, common_header.fec_set_index,
-                    sv, variant_name, sv & 0x0f);
-                eprintln!("[DATA_HEADER] parent_offset={} flags=0x{:02x} size={}",
-                    data_header.parent_offset, data_header.flags, data_header.size);
-                let data_off_print = SIZE_OF_COMMON_HEADER + SIZE_OF_DATA_HEADER; // 88
-                let after_data_print = data_header.size as usize + if common_header.shred_variant & 0xF0 == 0xB0 { SIZE_OF_SIGNATURE } else { 0 };
-                eprintln!("[DATA_OFF] data_off={} data_header.size={} data.len={} after_data_off={}",
-                    data_off_print, data_header.size, data.len(), after_data_print);
-            }
+
         }
         Shred::MerkleCode { coding_header, code, .. } => {
             batch.add_code_shred(coding_header.position.into(), code.clone());
@@ -229,11 +202,6 @@ async fn process_shred(
     );
     if let Some(recovered) = batch.try_recover() {
         println!("★★★ RECOVERED {} shreds! ★★★", recovered.len());
-        if let Some(first_payload) = recovered.first() {
-            let hex8 = first_payload.iter().take(8).map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(" ");
-            eprintln!("[BATCH] slot={} first_payload_len={} first8=[{}]",
-                batch.slot, first_payload.len(), hex8);
-        }
         if let Some(result) = deshredder::deshred_into_txs(&recovered) {
             let tree = MerkleTree::new(&result.transactions);
             let root = tree.root;

@@ -888,7 +888,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "base64 0.22.1",
  "bincode",
+ "bs58",
  "clap",
  "dc-gossip",
  "ed25519-dalek 2.2.0",
