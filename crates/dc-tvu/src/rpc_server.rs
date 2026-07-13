@@ -238,11 +238,13 @@ async fn handle_get_latest_slot(
     state: Arc<AppState>,
     id: u64,
 ) -> Json<JsonRpcResponse<serde_json::Value>> {
-    let stats = state.stats.read().await;
-    let slot = stats.latest_slot;
-    let txs = stats.latest_block_txs;
-    let root = stats.latest_block_root;
-    drop(stats);
+    let live = state.stats.read().await.latest_slot;
+
+    let slot = if live > 0 {
+        live
+    } else {
+        state.file_store.read().await.latest_slot().unwrap_or(0)
+    };
 
     if slot == 0 {
         return Json(JsonRpcResponse {
@@ -257,8 +259,6 @@ async fn handle_get_latest_slot(
         jsonrpc: "2.0".into(),
         result: Some(serde_json::json!({
             "slot": slot,
-            "num_transactions": txs,
-            "merkle_root": hex::encode(root),
         })),
         error: None,
         id,
