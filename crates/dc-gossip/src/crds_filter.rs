@@ -50,6 +50,16 @@ impl CrdsFilter {
     /// `num_items` is the number of entries expected — used to compute mask_bits for
     /// partitioning the filter space (higher mask_bits = more sub-filters, fewer collisions).
     pub fn new(bloom_max_bytes: usize, num_items: usize) -> Self {
+        Self::new_seeded(bloom_max_bytes, num_items, 0)
+    }
+
+    /// Same as [`CrdsFilter::new`], but selects one partition of the filter space.
+    ///
+    /// With `mask_bits = B` there are `2^B` disjoint partitions; a filter only matches
+    /// values whose top `B` hash bits equal `seed`. Agave's own client sends one request
+    /// per partition to enumerate a peer's whole CRDS table, so callers should iterate
+    /// `seed` across `0..2^mask_bits` (see `mask_bits()`/`create_pull_request_messages`).
+    pub fn new_seeded(bloom_max_bytes: usize, num_items: usize, seed: u64) -> Self {
         let max_bits = (bloom_max_bytes * 8) as f64;
         let false_rate: f64 = 0.1;
         let num_keys: f64 = 8.0;
@@ -72,9 +82,13 @@ impl CrdsFilter {
         // entrypoint to think we already have every value and return nothing.
         let filter = Bloom::random(max_items_val as usize, false_rate, max_bits as usize);
 
+        // Clamp `seed` into the valid partition range for `mask_bits_val`.
+        let num_partitions = 1u128 << mask_bits_val.min(63);
+        let seed = (u128::from(seed) % num_partitions) as u64;
+
         Self {
             filter,
-            mask: compute_mask(0, mask_bits_val),
+            mask: compute_mask(seed, mask_bits_val),
             mask_bits: mask_bits_val,
         }
     }
@@ -177,5 +191,18 @@ mod tests {
         let b = CrdsFilter::new(512, 0);
         // Same inputs should produce the same mask_bits
         assert_eq!(a.mask_bits(), b.mask_bits());
+    }
+
+    #[test]
+    fn seeded_filters_cover_disjoint_partitions() {
+        let mask_bits = CrdsFilter::new(512, 0).mask_bits();
+        assert!(mask_bits >= 6);
+        let n = 1u64 << mask_bits;
+        let masks: std::collections::HashSet<u64> = (0..n)
+            .map(|seed| CrdsFilter::new_seeded(512, 0, seed).mask)
+            .collect();
+        assert_eq!(masks.len(), n as usize, "each seed must yield a distinct partition mask");
+        // seed 0 matches the default (single-mask) constructor.
+        assert_eq!(CrdsFilter::new(512, 0).mask, CrdsFilter::new_seeded(512, 0, 0).mask);
     }
 }

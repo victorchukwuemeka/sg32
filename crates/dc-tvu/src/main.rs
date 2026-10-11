@@ -42,6 +42,9 @@ struct Args {
 
     #[arg(long, default_value = "entrypoint.devnet.solana.com:8001")]
     entrypoint: String,
+
+    #[arg(long, default_value = "https://api.devnet.solana.com")]
+    slot_rpc: String,
 }
 
 #[tokio::main]
@@ -65,6 +68,36 @@ async fn main() -> anyhow::Result<()> {
     tokio::spawn(async move {
         if let Err(e) = run_gossip_loop(gossip_tx, latest_slot_clone, gossip_port, &entrypoint).await {
             eprintln!("gossip error: {e}");
+        }
+    });
+
+    // Slot bootstrap: gossip-derived Vote slots are unreliable/stale, so poll a Solana
+    // RPC for the current slot and take the max. This lets repair target a live slot and
+    // actually assemble full FEC sets (otherwise it requests long-dead slots and stalls).
+    let slot_rpc = args.slot_rpc.clone();
+    let slot_for_rpc = latest_slot.clone();
+    tokio::spawn(async move {
+        let client = reqwest::Client::new();
+        loop {
+            match client
+                .post(&slot_rpc)
+                .json(&serde_json::json!({ "jsonrpc": "2.0", "id": 1, "method": "getSlot" }))
+                .send()
+                .await
+            {
+                Ok(r) => {
+                    if let Ok(v) = r.json::<serde_json::Value>().await {
+                        if let Some(s) = v.get("result").and_then(|x| x.as_u64()) {
+                            if s > slot_for_rpc.load(Ordering::Relaxed) {
+                                slot_for_rpc.store(s, Ordering::Relaxed);
+                                eprintln!("[SLOT-RPC] current slot = {s}");
+                            }
+                        }
+                    }
+                }
+                Err(e) => eprintln!("[SLOT-RPC] request failed: {e}"),
+            }
+            tokio::time::sleep(Duration::from_secs(3)).await;
         }
     });
 

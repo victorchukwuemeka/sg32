@@ -19,7 +19,7 @@ use handler::Handler;
 use keypair::NodeKeypair;
 use ping_pong::{Ping, Pong};
 use protocol::Protocol;
-use pull_request::create_pull_request_message;
+use pull_request::{create_pull_request_message, create_pull_request_messages};
 use solana_sdk::timing::timestamp;
 use std::collections::HashSet;
 use std::net::SocketAddr;
@@ -31,6 +31,27 @@ use tokio::sync::mpsc;
 use tokio::time::sleep;
 use transport::Transport;
 const DEVNET_SHRED_VERSION: u16 = 7016;
+/// Fetches our public IP from a few well-known echo services, each with a short
+/// timeout so a network outage can't hang startup. Falls back to "0.0.0.0".
+async fn fetch_public_ip() -> String {
+    const ENDPOINTS: [&str; 3] = [
+        "https://api.ipify.org",
+        "https://icanhazip.com",
+        "https://ifconfig.me/ip",
+    ];
+    for url in ENDPOINTS {
+        match tokio::time::timeout(Duration::from_secs(5), reqwest::get(url)).await {
+            Ok(Ok(r)) => match r.text().await {
+                Ok(t) if !t.trim().is_empty() => return t.trim().to_string(),
+                _ => eprintln!("[GOSSIP] {url} returned empty body"),
+            },
+            Ok(Err(e)) => eprintln!("[GOSSIP] {url} failed: {e}"),
+            Err(_) => eprintln!("[GOSSIP] {url} timed out"),
+        }
+    }
+    eprintln!("[GOSSIP] all public-IP lookups failed, using 0.0.0.0");
+    "0.0.0.0".into()
+}
 /// Run the gossip loop in the background, sending every discovered
 /// ContactInfo through the channel and updating latest_slot with the
 /// highest voted slot from the CRDS table.
@@ -50,13 +71,7 @@ pub async fn run_gossip_loop(
     let bind_addr = format!("0.0.0.0:{}", gossip_port);
     let transport = Transport::new(&bind_addr).await?;
     eprintln!("[GOSSIP] bound to {bind_addr}");
-    let public_ip = match reqwest::get("https://api.ipify.org").await {
-        Ok(r) => r.text().await.unwrap_or_else(|_| "unknown".into()),
-        Err(e) => {
-            eprintln!("[GOSSIP] ipify failed: {e}, using 0.0.0.0");
-            "0.0.0.0".into()
-        }
-    };
+    let public_ip = fetch_public_ip().await;
     let gossip_addr: SocketAddr = format!("{}:{}", public_ip, gossip_port).parse()?;
     eprintln!("[GOSSIP] our gossip addr: {gossip_addr}");
     // ── Ping/pong handshake ──
@@ -101,6 +116,13 @@ pub async fn run_gossip_loop(
             Ok(Ok((bytes, sender))) => {
                 let tag = u32::from_le_bytes(bytes[..4].try_into().unwrap_or([0xff; 4]));
                 eprintln!("[GOSSIP] initial-wait recv {} bytes from {} (tag={})", bytes.len(), sender, tag);
+                if let Ok(Protocol::PingMessage(ping)) = Protocol::decode_from(&bytes) {
+                    let pong = Pong::new(&ping, &node.keypair)?;
+                    transport
+                        .send(&Protocol::PongMessage(pong).encode_to()?, &sender)
+                        .await?;
+                    eprintln!("[GOSSIP] initial-wait replied Pong to {sender}");
+                }
             }
             Ok(Err(e)) => eprintln!("[GOSSIP] initial-wait recv error: {e}"),
             Err(_) => eprintln!("[GOSSIP] initial-wait tick {i}/15"),
@@ -113,6 +135,7 @@ pub async fn run_gossip_loop(
     known_peers.insert(entrypoint);
     let mut last_pull = Instant::now();
     let mut last_prune = Instant::now();
+    let mut pull_round: u64 = 0;
     loop {
         tokio::select! {
             result = transport.recv() => {
@@ -151,27 +174,50 @@ pub async fn run_gossip_loop(
                     }
                 }
                 _ = sleep(Duration::from_millis(500)) => {
-                if last_pull.elapsed() >= Duration::from_secs(30) {
+                if last_pull.elapsed() >= Duration::from_secs(10) {
                     if known_peers.is_empty() {
                         known_peers.insert(entrypoint);
                     }
                     let contact_info = ContactInfo::new(node.pubkey(), timestamp(), gossip_addr, DEVNET_SHRED_VERSION);
-                    if let Ok(bytes) = create_pull_request_message(contact_info, &node.keypair) {
-                        eprintln!("[GOSSIP] PullRequest size={}", bytes.len());
-                        for peer in known_peers.iter() {
-                            eprintln!("[GOSSIP] sending PullRequest to {peer}");
-                            let _ = transport.send(&bytes, peer).await;
+                    match create_pull_request_messages(contact_info, &node.keypair) {
+                        Ok(messages) => {
+                            // Full enumeration of all filter partitions to the entrypoint:
+                            // a single mask only returns ~1/2^mask_bits of the entrypoint's
+                            // CRDS table, so we must ask for every bucket to discover peers.
+                            for bytes in &messages {
+                                let _ = transport.send(bytes, &entrypoint).await;
+                            }
+                            eprintln!(
+                                "[GOSSIP] sent {} partition PullRequests to entrypoint {entrypoint}",
+                                messages.len()
+                            );
+                            // To other peers, send one rotating partition per round to spread
+                            // load while still eventually covering the whole table.
+                            let num = messages.len() as u64;
+                            if num > 0 {
+                                for peer in known_peers.iter().filter(|p| **p != entrypoint) {
+                                    let idx = (pull_round % num) as usize;
+                                    let _ = transport.send(&messages[idx], peer).await;
+                                }
+                            }
+                            pull_round = pull_round.wrapping_add(1);
                         }
-                    } else {
-                        eprintln!("[GOSSIP] Failed to create PullRequest");
+                        Err(e) => eprintln!("[GOSSIP] Failed to create PullRequest: {e}"),
                     }
                     last_pull = Instant::now();
                 }
                 if last_prune.elapsed() >= Duration::from_secs(15) {
                     crds_table.prune();
-                    let slot = crds_table.get_highest_slot().unwrap_or(0);
+                    // Only ever advance the slot. A prune that sees no votes must NOT
+                    // reset the last-known good slot to 0, otherwise repair stalls every
+                    // time the (rarely-published) Vote entries aren't present.
+                    if let Some(slot) = crds_table.get_highest_slot() {
+                        if slot > latest_slot.load(Ordering::Relaxed) {
+                            latest_slot.store(slot, Ordering::Relaxed);
+                        }
+                    }
+                    let slot = latest_slot.load(Ordering::Relaxed);
                     eprintln!("[GOSSIP] prune: {} entries, highest_slot={}", crds_table.len(), slot);
-                    latest_slot.store(slot, Ordering::Relaxed);
                     for (_, ci) in crds_table.all_contact_infos() {
                         // Send every discovered ContactInfo to the channel
                         let _ = tx.send(ci.clone()).await;

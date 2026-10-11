@@ -91,12 +91,11 @@ async fn load_slot_data(
         let tree = data.merkle_tree.clone().unwrap();
         drop(buf);
 
-        let txs: Vec<VersionedTransaction> = entries
+        let raw: Vec<Vec<u8>> = entries
             .iter()
-            .flat_map(|e| &e.transactions)
-            .cloned()
+            .flat_map(|e| e.transactions.iter().cloned())
             .collect();
-        return Some((txs, tree));
+        return Some((parse_transactions(&raw), tree));
     }
     drop(buf);
 
@@ -106,13 +105,13 @@ async fn load_slot_data(
 
     let result = crate::deshredder::deshred_into_txs(&[raw])?;
     let tree = Arc::new(MerkleTree::new(&result.transactions));
-    let txs: Vec<VersionedTransaction> = result
-        .entries
-        .iter()
-        .flat_map(|e| &e.transactions)
-        .cloned()
-        .collect();
-    Some((txs, tree))
+    Some((parse_transactions(&result.transactions), tree))
+}
+
+fn parse_transactions(raw: &[Vec<u8>]) -> Vec<VersionedTransaction> {
+    raw.iter()
+        .filter_map(|bytes| bincode::deserialize(bytes).ok())
+        .collect()
 }
 
 fn encode_transaction_base64(tx: &VersionedTransaction) -> String {

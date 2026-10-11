@@ -111,6 +111,55 @@ pub fn create_pull_request_message(
         .map_err(|_| PullRequestErrorMessages::SerializeFailed)
 }
 
+/// Builds one signed `PullRequest` per partition of the CRDS filter space.
+///
+/// Agave partitions its CRDS table into `2^mask_bits` buckets (mask_bits is 6 for the
+/// standard packet size → 64 buckets). A single PullRequest only ever returns the values
+/// in **its** bucket, so a single-mask request (seed 0) fetches roughly 1/64 of a peer's
+/// table — which is why a lone mask discovers only a couple of peers. Enumerating all
+/// buckets is how Agave's own client discovers the full peer set.
+///
+/// The caller (`CrdsValue`) is identical across requests, so it is signed once and reused;
+/// only the `CrdsFilter` differs.
+pub fn create_pull_request_messages(
+    contact_info: ContactInfo,
+    keypair: &Keypair,
+) -> Result<Vec<Vec<u8>>, PullRequestErrorMessages> {
+    let socket_ip = contact_info.sockets();
+    if socket_ip.is_empty() {
+        return Err(PullRequestErrorMessages::NoSocketEntry);
+    }
+
+    let signed_info = CrdsValue::new_contact_info(contact_info, keypair);
+    let caller_size = bincode::serialized_size(&signed_info)
+        .map_err(|_| PullRequestErrorMessages::SerializeFailed)? as usize;
+    let bloom_max_bytes = get_max_bloom_filter_bytes(caller_size);
+
+    // mask_bits depends only on the bloom budget (constant for a fixed caller), so a single
+    // probe filter tells us how many partitions exist.
+    let probe = CrdsFilter::new(bloom_max_bytes, /*num_items=*/ 0);
+    let num_partitions = 1u64 << probe.mask_bits().min(63);
+
+    let mut messages = Vec::with_capacity(num_partitions as usize);
+    for seed in 0..num_partitions {
+        let filter = CrdsFilter::new_seeded(bloom_max_bytes, /*num_items=*/ 0, seed);
+        let bytes = Protocol::PullRequest(filter, signed_info.clone())
+            .encode_to()
+            .map_err(|_| PullRequestErrorMessages::SerializeFailed)?;
+        messages.push(bytes);
+    }
+
+    eprintln!(
+        "[PULL_REQ] built {} partition requests (mask_bits={} bloom_max_bytes={} caller_size={})",
+        messages.len(),
+        probe.mask_bits(),
+        bloom_max_bytes,
+        caller_size
+    );
+
+    Ok(messages)
+}
+
 #[derive(Error, Debug)]
 pub enum PullRequestErrorMessages {
     #[error("No socket adress in contact info")]
